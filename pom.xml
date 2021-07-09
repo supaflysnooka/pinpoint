@@ -147,7 +147,7 @@
 
         <spring.boot.version>2.4.5</spring.boot.version>
 
-        <slf4j.version>1.7.30</slf4j.version>
+        <slf4j.version>1.7.31</slf4j.version>
         <log4j2-jdk7.version>2.12.1</log4j2-jdk7.version>
         <log4j2-jdk8.version>2.13.3</log4j2-jdk8.version>
         <log4j2.version>${log4j2-jdk7.version}</log4j2.version>
@@ -1067,7 +1067,7 @@
                     <version>1.6.0</version>
                     <configuration>
                         <options>sub, boss, newcap, loopfunc</options>
-                        <globals></globals>
+                        <globals/>
                         <directories>
                             <directory>src/main/webapp</directory>
                         </directories>
