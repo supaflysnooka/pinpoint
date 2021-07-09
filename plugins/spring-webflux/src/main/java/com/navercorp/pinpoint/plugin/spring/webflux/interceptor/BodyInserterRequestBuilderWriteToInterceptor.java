@@ -16,6 +16,7 @@
 
 package com.navercorp.pinpoint.plugin.spring.webflux.interceptor;
 
+import com.navercorp.pinpoint.bootstrap.async.AsyncContextAccessor;
 import com.navercorp.pinpoint.bootstrap.context.AsyncContext;
 import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
@@ -33,6 +34,7 @@ import com.navercorp.pinpoint.bootstrap.plugin.request.util.CookieExtractor;
 import com.navercorp.pinpoint.bootstrap.plugin.request.util.CookieRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.util.CookieRecorderFactory;
 import com.navercorp.pinpoint.common.plugin.util.HostAndPort;
+import com.navercorp.pinpoint.common.util.ArrayUtils;
 import com.navercorp.pinpoint.plugin.spring.webflux.SpringWebFluxConstants;
 import com.navercorp.pinpoint.plugin.spring.webflux.SpringWebFluxPluginConfig;
 
@@ -89,7 +91,7 @@ public class BodyInserterRequestBuilderWriteToInterceptor extends AsyncContextSp
     }
 
     private boolean validate(final Object[] args) {
-        if (args == null || args.length < 1) {
+        if (ArrayUtils.isEmpty(args)) {
             if (isDebug) {
                 logger.debug("Invalid args object. args={}.", args);
             }
@@ -119,5 +121,24 @@ public class BodyInserterRequestBuilderWriteToInterceptor extends AsyncContextSp
         final ClientRequestWrapper clientRequestWrapper = new WebClientRequestWrapper(request);
         this.clientRequestRecorder.record(recorder, clientRequestWrapper, throwable);
         this.cookieRecorder.record(recorder, request, throwable);
+
+        if (isAsync(result)) {
+            // make asynchronous trace-id
+            final AsyncContext asyncContext = recorder.recordNextAsyncContext();
+            ((AsyncContextAccessor) result)._$PINPOINT$_setAsyncContext(asyncContext);
+            if (isDebug) {
+                logger.debug("Set closeable-AsyncContext {}", asyncContext);
+            }
+        }
+    }
+
+    private boolean isAsync(Object result) {
+        if (result == null) {
+            return false;
+        }
+        if (!(result instanceof AsyncContextAccessor)) {
+            return false;
+        }
+        return true;
     }
 }

@@ -107,6 +107,8 @@ import static com.navercorp.pinpoint.common.trace.AnnotationKeyProperty.VIEW_IN_
  * <tr><td>174</td><td>es.action</td></tr>
  * <tr><td>175</td><td>es.responseHandle</td></tr>
  * <tr><td>176</td><td>es.version</td></tr>
+ * <tr><td>180</td><td>process.command</td></tr>
+ * <tr><td>181</td><td>process.pid</td></tr>
  *
  * <tr><td><s>200</s></td><td><s>cxf.operation</s></td></tr>
  * <tr><td><s>201</s></td><td><s>cxf.args</s></td></tr>
@@ -121,6 +123,7 @@ import static com.navercorp.pinpoint.common.trace.AnnotationKeyProperty.VIEW_IN_
  * <tr><td>300</td><td>PROXY_HTTP_HEADER</td></tr>
  * <tr><td>310</td><td>REDIS.IO</td></tr>
  * <tr><td>320</td><td>hbase.client.params</td></tr>
+ * <tr><td>330</td><td>memory.usage</td></tr>
  * <tr><td>923</td><td>marker.message</td></tr>
  * <tr><td>9000</td><td>gson.json.length</td></tr>
  * <tr><td>9001</td><td>jackson.json.length</td></tr>
@@ -194,6 +197,7 @@ public interface AnnotationKey {
     AnnotationKey HTTP_PARAM_ENTITY = AnnotationKeyFactory.of(42, "http.entity", VIEW_IN_RECORD_SET);
     AnnotationKey HTTP_COOKIE = AnnotationKeyFactory.of(45, "http.cookie", VIEW_IN_RECORD_SET);
     AnnotationKey HTTP_STATUS_CODE = AnnotationKeyFactory.of(46, "http.status.code", VIEW_IN_RECORD_SET);
+    AnnotationKey HTTP_REQUEST_HEADER = AnnotationKeyFactory.of(47, "http.req.header", VIEW_IN_RECORD_SET);
     AnnotationKey HTTP_INTERNAL_DISPLAY = AnnotationKeyFactory.of(48, "http.internal.display");
     AnnotationKey HTTP_IO = AnnotationKeyFactory.of(49, "http.io", VIEW_IN_RECORD_SET);
     // post method parameter of httpclient
@@ -233,4 +237,5 @@ public interface AnnotationKey {
 
     AnnotationKey PROXY_HTTP_HEADER = AnnotationKeyFactory.of(300, "PROXY_HTTP_HEADER", VIEW_IN_RECORD_SET);
     AnnotationKey REDIS_IO = AnnotationKeyFactory.of(310, "redis.io");
+    AnnotationKey MEMORY_USAGE = AnnotationKeyFactory.of(330, "memory.usage", VIEW_IN_RECORD_SET);
 }

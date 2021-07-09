@@ -26,6 +26,7 @@ import com.navercorp.pinpoint.web.TestTraceUtils;
 import com.navercorp.pinpoint.web.applicationmap.ApplicationMap;
 import com.navercorp.pinpoint.web.applicationmap.ApplicationMapBuilderFactory;
 import com.navercorp.pinpoint.web.applicationmap.appender.histogram.NodeHistogramAppenderFactory;
+import com.navercorp.pinpoint.web.applicationmap.appender.metric.DefaultMetricInfoAppenderFactory;
 import com.navercorp.pinpoint.web.applicationmap.appender.server.ServerInfoAppenderFactory;
 import com.navercorp.pinpoint.web.applicationmap.histogram.Histogram;
 import com.navercorp.pinpoint.web.applicationmap.histogram.NodeHistogram;
@@ -46,7 +47,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -57,6 +57,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,6 +68,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 /**
@@ -92,16 +94,16 @@ public class FilteredMapServiceImplTest {
     private ApplicationFactory applicationFactory;
 
     // Mocked
-    private ServiceTypeRegistryService registry = TestTraceUtils.mockServiceTypeRegistryService();
+    private final ServiceTypeRegistryService registry = TestTraceUtils.mockServiceTypeRegistryService();
 
     @Spy
     private ApplicationMapBuilderFactory applicationMapBuilderFactory = new ApplicationMapBuilderFactory(
             new NodeHistogramAppenderFactory(executor),
-            new ServerInfoAppenderFactory(executor)
+            new ServerInfoAppenderFactory(executor),
+            Optional.of(new DefaultMetricInfoAppenderFactory())
     );
 
-    @InjectMocks
-    private FilteredMapService filteredMapService = new FilteredMapServiceImpl();
+    private FilteredMapService filteredMapService;
 
     @Before
     public void init() {
@@ -120,6 +122,7 @@ public class FilteredMapServiceImplTest {
             ServiceType serviceType = registry.findServiceTypeByName(invocation.getArgument(1));
             return new Application(applicationName, serviceType);
         });
+        filteredMapService = new FilteredMapServiceImpl(agentInfoService, traceDao, applicationTraceIndexDao, registry, applicationFactory, Optional.empty(), applicationMapBuilderFactory);
     }
 
     @After
@@ -141,8 +144,8 @@ public class FilteredMapServiceImplTest {
     @Test
     public void twoTier() {
         // Given
-        Range originalRange = new Range(1000, 2000);
-        Range scanRange = new Range(1000, 2000);
+        Range originalRange = Range.newRange(1000, 2000);
+        Range scanRange = Range.newRange(1000, 2000);
         final TimeWindow timeWindow = new TimeWindow(originalRange, TimeWindowDownSampler.SAMPLER);
 
         // root app span
@@ -179,10 +182,11 @@ public class FilteredMapServiceImplTest {
         SpanEventBo appACacheSpanEvent = new TestTraceUtils.CacheSpanEventBuilder("CacheName", "1.1.1.1", cacheStartElapsed, cacheEndElapsed).build();
         appASpan.addSpanEvent(appACacheSpanEvent);
 
-        when(traceDao.selectAllSpans(anyList())).thenReturn(Collections.singletonList(Arrays.asList(rootSpan, appASpan)));
+        when(traceDao.selectAllSpans(anyList(), isNull())).thenReturn(Collections.singletonList(Arrays.asList(rootSpan, appASpan)));
 
         // When
-        ApplicationMap applicationMap = filteredMapService.selectApplicationMapWithScatterData(Collections.emptyList(), originalRange, scanRange, 1, 1, Filter.acceptAllFilter(), 0);
+        final FilteredMapServiceOption option = new FilteredMapServiceOption.Builder(Collections.emptyList(), originalRange, scanRange, 1, 1, Filter.acceptAllFilter(), 0).build();
+        ApplicationMap applicationMap = filteredMapService.selectApplicationMapWithScatterData(option);
 
         // Then
         Collection<Node> nodes = applicationMap.getNodes();

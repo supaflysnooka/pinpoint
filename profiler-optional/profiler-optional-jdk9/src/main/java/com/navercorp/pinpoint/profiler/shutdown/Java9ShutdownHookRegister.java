@@ -16,11 +16,13 @@
 
 package com.navercorp.pinpoint.profiler.shutdown;
 
+
 import com.navercorp.pinpoint.profiler.ShutdownHookRegister;
-import jdk.internal.misc.JavaLangAccess;
-import jdk.internal.misc.SharedSecrets;
+import com.navercorp.pinpoint.profiler.instrument.classloading.JavaLangAccess;
+import com.navercorp.pinpoint.profiler.instrument.classloading.JavaLangAccessHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * If  change the name of this class,
@@ -31,20 +33,21 @@ import org.slf4j.LoggerFactory;
 public class Java9ShutdownHookRegister implements ShutdownHookRegister {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     @Override
     public void register(Thread thread) {
         logger.info("register() started.");
-
-        JavaLangAccess javaLangAccess = SharedSecrets.getJavaLangAccess();
-        for (int i = 3; i < 10; i++) {
-            try {
-                javaLangAccess.registerShutdownHook(i, true, thread);
-                logger.info("register() completed.");
-                return;
-            } catch (Throwable e) {
+        JavaLangAccess javaLangAccess = JavaLangAccessHelper.getJavaLangAccess();
+        if (javaLangAccess != null) {
+            for (int i = 3; i < 10; i++) {
+                try {
+                    javaLangAccess.registerShutdownHook(i, true, thread);
+                    logger.info("register({}) completed.", i);
+                    return;
+                } catch (Throwable ignore) {
+                }
             }
         }
-
         Runtime.getRuntime().addShutdownHook(thread);
         logger.info("register() completed. (ShutdownHook registered in java.lang.Runtime.)");
     }

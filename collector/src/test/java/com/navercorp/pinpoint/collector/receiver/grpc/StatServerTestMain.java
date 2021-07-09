@@ -16,7 +16,9 @@
 
 package com.navercorp.pinpoint.collector.receiver.grpc;
 
+import com.google.protobuf.GeneratedMessageV3;
 import com.navercorp.pinpoint.collector.receiver.DispatchHandler;
+import com.navercorp.pinpoint.collector.receiver.grpc.service.DefaultServerRequestFactory;
 import com.navercorp.pinpoint.collector.receiver.grpc.service.StatService;
 import com.navercorp.pinpoint.collector.receiver.grpc.service.StreamExecutorServerInterceptorFactory;
 import com.navercorp.pinpoint.common.server.util.AddressFilter;
@@ -30,7 +32,7 @@ import io.grpc.ServerServiceDefinition;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,7 +49,7 @@ public class StatServerTestMain {
 
         ExecutorService executorService = Executors.newFixedThreadPool(8);
         ServerServiceDefinition bindableService = newStatBindableService(executorService);
-        grpcReceiver.setBindableServiceList(Arrays.asList(bindableService));
+        grpcReceiver.setBindableServiceList(Collections.singletonList(bindableService));
         grpcReceiver.setAddressFilter(new MockAddressFilter());
         grpcReceiver.setExecutor(Executors.newFixedThreadPool(8));
         grpcReceiver.setEnable(true);
@@ -60,9 +62,12 @@ public class StatServerTestMain {
     }
 
     private ServerServiceDefinition newStatBindableService(Executor executor) throws Exception {
-        FactoryBean<ServerInterceptor> interceptorFactory = new StreamExecutorServerInterceptorFactory(executor, 100, Executors.newSingleThreadScheduledExecutor(), 1000, 10);
+        FactoryBean<ServerInterceptor> interceptorFactory = new StreamExecutorServerInterceptorFactory(executor,
+                100, Executors.newSingleThreadScheduledExecutor(),
+                1000, 10,
+                 -1);
         ServerInterceptor interceptor = interceptorFactory.getObject();
-        StatService statService = new StatService(new MockDispatchHandler());
+        StatService statService = new StatService(new MockDispatchHandler(), new DefaultServerRequestFactory());
         return ServerInterceptors.intercept(statService, interceptor);
     }
 
@@ -71,18 +76,19 @@ public class StatServerTestMain {
         main.run();
     }
 
-    private static class MockDispatchHandler implements DispatchHandler {
+    private static class MockDispatchHandler implements DispatchHandler<GeneratedMessageV3, GeneratedMessageV3> {
         private static final AtomicInteger counter = new AtomicInteger(0);
 
         @Override
-        public void dispatchSendMessage(ServerRequest serverRequest) {
+        public void dispatchSendMessage(ServerRequest<GeneratedMessageV3> serverRequest) {
             System.out.println("Dispatch send message " + serverRequest);
         }
 
         @Override
-        public void dispatchRequestMessage(ServerRequest serverRequest, ServerResponse serverResponse) {
+        public void dispatchRequestMessage(ServerRequest<GeneratedMessageV3> serverRequest, ServerResponse<GeneratedMessageV3> serverResponse) {
             System.out.println("Dispatch request message " + serverRequest + ", " + serverResponse);
-            serverResponse.write(PResult.newBuilder().setMessage("Success" + counter.getAndIncrement()).build());
+            PResult pResult = PResult.newBuilder().setMessage("Success" + counter.getAndIncrement()).build();
+            serverResponse.write(pResult);
         }
     }
 

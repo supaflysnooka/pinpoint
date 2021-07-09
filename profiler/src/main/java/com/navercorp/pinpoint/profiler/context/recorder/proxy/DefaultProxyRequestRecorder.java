@@ -19,11 +19,13 @@ package com.navercorp.pinpoint.profiler.context.recorder.proxy;
 import com.navercorp.pinpoint.bootstrap.context.SpanRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.proxy.ProxyRequestRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.RequestAdaptor;
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.common.util.StringUtils;
 import com.navercorp.pinpoint.profiler.context.DefaultTrace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * @author jaehong.kim
@@ -32,22 +34,27 @@ public class DefaultProxyRequestRecorder<T> implements ProxyRequestRecorder<T> {
     private static final Logger logger = LoggerFactory.getLogger(DefaultTrace.class.getName());
     private final boolean isDebug = logger.isDebugEnabled();
 
-    private final ProxyRequestParserLoaderService proxyRequestParserLoaderServicer;
+    private final ProxyRequestParser[] proxyRequestParsers;
     private final RequestAdaptor<T> requestAdaptor;
     private final ProxyRequestAnnotationFactory annotationFactory = new ProxyRequestAnnotationFactory();
 
-    public DefaultProxyRequestRecorder(final ProxyRequestParserLoaderService proxyRequestparserLoaderService, final RequestAdaptor<T> requestAdaptor) {
-        this.proxyRequestParserLoaderServicer = proxyRequestparserLoaderService;
-        this.requestAdaptor = Assert.requireNonNull(requestAdaptor, "requestAdaptor");
+    public DefaultProxyRequestRecorder(final List<ProxyRequestParser> proxyRequestParserList, final RequestAdaptor<T> requestAdaptor) {
+        Objects.requireNonNull(proxyRequestParserList, "proxyRequestParserList");
+        this.proxyRequestParsers = proxyRequestParserList.toArray(new ProxyRequestParser[0]);
+
+        this.requestAdaptor = Objects.requireNonNull(requestAdaptor, "requestAdaptor");
     }
 
     public void record(final SpanRecorder recorder, final T request) {
-        if (recorder == null || request == null) {
+        if (recorder == null) {
+            return;
+        }
+        if (request == null) {
             return;
         }
 
         try {
-            for (ProxyRequestParser parser : proxyRequestParserLoaderServicer.getProxyRequestParserList()) {
+            for (ProxyRequestParser parser : proxyRequestParsers) {
                 parseAndRecord(recorder, request, parser);
             }
         } catch (Exception e) {

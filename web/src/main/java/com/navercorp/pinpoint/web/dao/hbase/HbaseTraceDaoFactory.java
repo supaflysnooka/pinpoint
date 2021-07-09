@@ -2,9 +2,10 @@ package com.navercorp.pinpoint.web.dao.hbase;
 
 import com.navercorp.pinpoint.web.dao.TraceDao;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
+
+import java.util.Objects;
 
 /**
  * TraceDao Factory for compatibility
@@ -13,9 +14,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class HbaseTraceDaoFactory implements FactoryBean<TraceDao> {
 
-    @Autowired
-    @Qualifier("hbaseTraceDaoV2")
-    private TraceDao v2;
+    private final TraceDao v2;
+
+    public HbaseTraceDaoFactory(@Qualifier("hbaseTraceDaoV2") TraceDao v2) {
+        this.v2 = Objects.requireNonNull(v2, "v2");
+    }
 
     @Override
     public TraceDao getObject() throws Exception {

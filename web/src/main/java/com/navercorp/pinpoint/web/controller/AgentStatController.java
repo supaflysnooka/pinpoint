@@ -20,6 +20,7 @@ package com.navercorp.pinpoint.web.controller;
 
 import com.navercorp.pinpoint.common.server.bo.stat.ActiveTraceBo;
 import com.navercorp.pinpoint.common.server.bo.stat.AgentStatDataPoint;
+import com.navercorp.pinpoint.common.server.bo.stat.AgentUriStatBo;
 import com.navercorp.pinpoint.common.server.bo.stat.CpuLoadBo;
 import com.navercorp.pinpoint.common.server.bo.stat.DataSourceListBo;
 import com.navercorp.pinpoint.common.server.bo.stat.DeadlockThreadCountBo;
@@ -29,10 +30,14 @@ import com.navercorp.pinpoint.common.server.bo.stat.JvmGcBo;
 import com.navercorp.pinpoint.common.server.bo.stat.JvmGcDetailedBo;
 import com.navercorp.pinpoint.common.server.bo.stat.ResponseTimeBo;
 import com.navercorp.pinpoint.common.server.bo.stat.TransactionBo;
+import com.navercorp.pinpoint.common.server.bo.stat.TotalThreadCountBo;
+import com.navercorp.pinpoint.common.server.bo.stat.LoadedClassBo;
 import com.navercorp.pinpoint.web.service.stat.ActiveTraceChartService;
 import com.navercorp.pinpoint.web.service.stat.ActiveTraceService;
 import com.navercorp.pinpoint.web.service.stat.AgentStatChartService;
 import com.navercorp.pinpoint.web.service.stat.AgentStatService;
+import com.navercorp.pinpoint.web.service.stat.AgentUriStatChartService;
+import com.navercorp.pinpoint.web.service.stat.AgentUriStatService;
 import com.navercorp.pinpoint.web.service.stat.CpuLoadChartService;
 import com.navercorp.pinpoint.web.service.stat.CpuLoadService;
 import com.navercorp.pinpoint.web.service.stat.DataSourceChartService;
@@ -51,6 +56,10 @@ import com.navercorp.pinpoint.web.service.stat.ResponseTimeChartService;
 import com.navercorp.pinpoint.web.service.stat.ResponseTimeService;
 import com.navercorp.pinpoint.web.service.stat.TransactionChartService;
 import com.navercorp.pinpoint.web.service.stat.TransactionService;
+import com.navercorp.pinpoint.web.service.stat.TotalThreadCountChartService;
+import com.navercorp.pinpoint.web.service.stat.TotalThreadCountService;
+import com.navercorp.pinpoint.web.service.stat.LoadedClassCountChartService;
+import com.navercorp.pinpoint.web.service.stat.LoadedClassCountService;
 import com.navercorp.pinpoint.web.util.TimeWindow;
 import com.navercorp.pinpoint.web.util.TimeWindowSampler;
 import com.navercorp.pinpoint.web.util.TimeWindowSlotCentricSampler;
@@ -89,7 +98,7 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
             @RequestParam("agentId") String agentId,
             @RequestParam("from") long from,
             @RequestParam("to") long to) {
-        Range rangeToScan = new Range(from, to);
+        Range rangeToScan = Range.newRange(from, to);
         return this.agentStatService.selectAgentStatList(agentId, rangeToScan);
     }
 
@@ -101,7 +110,7 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
             @RequestParam("from") long from,
             @RequestParam("to") long to) {
         TimeWindowSampler sampler = new TimeWindowSlotCentricSampler();
-        TimeWindow timeWindow = new TimeWindow(new Range(from, to), sampler);
+        TimeWindow timeWindow = new TimeWindow(Range.newRange(from, to), sampler);
         return this.agentStatChartService.selectAgentChart(agentId, timeWindow);
     }
 
@@ -121,7 +130,7 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
                 return intervalMs;
             }
         };
-        TimeWindow timeWindow = new TimeWindow(new Range(from, to), sampler);
+        TimeWindow timeWindow = new TimeWindow(Range.newRange(from, to), sampler);
         return this.agentStatChartService.selectAgentChart(agentId, timeWindow);
     }
 
@@ -133,7 +142,7 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
             @RequestParam("from") long from,
             @RequestParam("to") long to) {
         TimeWindowSampler sampler = new TimeWindowSlotCentricSampler();
-        TimeWindow timeWindow = new TimeWindow(new Range(from, to), sampler);
+        TimeWindow timeWindow = new TimeWindow(Range.newRange(from, to), sampler);
         return this.agentStatChartService.selectAgentChartList(agentId, timeWindow);
     }
 
@@ -153,7 +162,7 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
                 return intervalMs;
             }
         };
-        TimeWindow timeWindow = new TimeWindow(new Range(from, to), sampler);
+        TimeWindow timeWindow = new TimeWindow(Range.newRange(from, to), sampler);
         return this.agentStatChartService.selectAgentChartList(agentId, timeWindow);
     }
 
@@ -246,4 +255,35 @@ public abstract class AgentStatController<T extends AgentStatDataPoint> {
             super(directBufferService, directBufferChartService);
         }
     }
+
+    @Controller
+    @RequestMapping("/getAgentStat/totalThreadCount")
+    public static class TotalThreadCountController extends AgentStatController<TotalThreadCountBo> {
+        @Autowired
+        public TotalThreadCountController(TotalThreadCountService totalThreadCountService,
+                                          TotalThreadCountChartService totalThreadCountChartService) {
+            super(totalThreadCountService, totalThreadCountChartService);
+        }
+    }
+
+    @Controller
+    @RequestMapping("/getAgentStat/loadedClass")
+    public static class LoadedClassCountController extends AgentStatController<LoadedClassBo> {
+        @Autowired
+        public LoadedClassCountController(LoadedClassCountService loadedClassCountService,
+                                          LoadedClassCountChartService loadedClassCountChartService) {
+            super(loadedClassCountService, loadedClassCountChartService);
+        }
+    }
+
+    @Controller
+    @RequestMapping("/getAgentStat/uriStat")
+    public static class UriStatController extends AgentStatController<AgentUriStatBo> {
+        @Autowired
+        public UriStatController(AgentUriStatService agentUriStatService,
+                                             AgentUriStatChartService agentUriStatChartService) {
+            super(agentUriStatService, agentUriStatChartService);
+        }
+    }
+
 }

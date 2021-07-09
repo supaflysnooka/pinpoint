@@ -24,17 +24,17 @@ import com.navercorp.pinpoint.profiler.context.thrift.DefaultTransactionIdEncode
 import com.navercorp.pinpoint.profiler.context.id.TransactionIdEncoder;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
 import com.navercorp.pinpoint.profiler.context.thrift.SpanThriftMessageConverter;
+import com.navercorp.pinpoint.testcase.util.SocketUtils;
 import com.navercorp.pinpoint.thrift.dto.TAgentInfo;
 import com.navercorp.pinpoint.thrift.dto.TSpan;
 import com.navercorp.pinpoint.thrift.dto.TSpanChunk;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.thrift.TBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.SocketUtils;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

@@ -23,6 +23,7 @@ import com.navercorp.pinpoint.web.view.ResponseTimeViewModel;
 import com.navercorp.pinpoint.web.vo.Application;
 import com.navercorp.pinpoint.web.vo.Range;
 
+import com.navercorp.pinpoint.web.vo.ResponseTimeStatics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,29 +39,20 @@ public class ApplicationTimeHistogram {
     private final Application application;
     private final Range range;
 
-    private List<TimeHistogram> histogramList;
+    private final List<TimeHistogram> histogramList;
 
     public ApplicationTimeHistogram(Application application, Range range) {
         this(application, range, Collections.emptyList());
     }
 
     public ApplicationTimeHistogram(Application application, Range range, List<TimeHistogram> histogramList) {
-        if (application == null) {
-            throw new NullPointerException("application");
-        }
-        if (range == null) {
-            throw new NullPointerException("range");
-        }
-        if (histogramList == null) {
-            throw new NullPointerException("histogramList");
-        }
-        this.application = application;
-        this.range = range;
-        this.histogramList = histogramList;
+        this.application = Objects.requireNonNull(application, "application");
+        this.range = Objects.requireNonNull(range, "range");
+        this.histogramList = Objects.requireNonNull(histogramList, "histogramList");
     }
 
     public List<ResponseTimeViewModel> createViewModel() {
-        final List<ResponseTimeViewModel> value = new ArrayList<>(5);
+        final List<ResponseTimeViewModel> value = new ArrayList<>(9);
         ServiceType serviceType = application.getServiceType();
         HistogramSchema schema = serviceType.getHistogramSchema();
         value.add(new ResponseTimeViewModel(schema.getFastSlot().getSlotName(), getColumnValue(SlotType.FAST)));
@@ -72,6 +64,10 @@ public class ApplicationTimeHistogram {
         value.add(new ResponseTimeViewModel(schema.getVerySlowSlot().getSlotName(), getColumnValue(SlotType.VERY_SLOW)));
 //        value.add(new ResponseTimeViewModel(schema.getVerySlowErrorSlot().getSlotName(), getColumnValue(SlotType.VERY_SLOW_ERROR)));
         value.add(new ResponseTimeViewModel(schema.getErrorSlot().getSlotName(), getColumnValue(SlotType.ERROR)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.AVG_ELAPSED_TIME, getAvgValue()));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.MAX_ELAPSED_TIME, getColumnValue(SlotType.MAX_STAT)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.SUM_ELAPSED_TIME, getColumnValue(SlotType.SUM_STAT)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.TOTAL_COUNT, getTotalCount()));
 
         return value;
     }
@@ -87,6 +83,28 @@ public class ApplicationTimeHistogram {
         return result;
     }
 
+    private List<ResponseTimeViewModel.TimeCount> getAvgValue() {
+        List<ResponseTimeViewModel.TimeCount> result = new ArrayList<>(histogramList.size());
+        for (TimeHistogram timeHistogram : histogramList) {
+            final long timeStamp = timeHistogram.getTimeStamp();
+            final long totalCount = timeHistogram.getTotalCount();
+            final long sumElapsed = getCount(timeHistogram, SlotType.SUM_STAT);
+            final long avgElapsed = totalCount > 0 ? sumElapsed / totalCount : 0L;
+
+            result.add(new ResponseTimeViewModel.TimeCount(timeStamp, avgElapsed));
+        }
+        return result;
+    }
+
+    private List<ResponseTimeViewModel.TimeCount> getTotalCount() {
+        List<ResponseTimeViewModel.TimeCount> result = new ArrayList<>(histogramList.size());
+        for (TimeHistogram timeHistogram : histogramList) {
+            final long timeStamp = timeHistogram.getTimeStamp();
+            final long totalCount = timeHistogram.getTotalCount();
+            result.add(new ResponseTimeViewModel.TimeCount(timeStamp, totalCount));
+        }
+        return result;
+    }
 
     public long getCount(TimeHistogram timeHistogram, SlotType slotType) {
         return timeHistogram.getCount(slotType);

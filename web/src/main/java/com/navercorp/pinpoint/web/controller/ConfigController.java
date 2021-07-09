@@ -60,10 +60,11 @@ public class ConfigController {
         result.put("showApplicationStat", webProperties.isShowApplicationStat());
         result.put("showStackTraceOnError", webProperties.isShowStackTraceOnError());
         result.put("openSource", webProperties.isOpenSource());
+        result.put("webhookEnable", webProperties.isWebhookEnable());
         result.put("version", Version.VERSION);
 
         String userId = userService.getUserIdFromSecurity();
-        if (!StringUtils.isEmpty(userId)) {
+        if (StringUtils.hasLength(userId)) {
             User user = userService.selectUserByUserId(userId);
 
             if (user == null) {
@@ -75,7 +76,7 @@ public class ConfigController {
             }
         }
         
-        if(!StringUtils.isEmpty(webProperties.getSecurityGuideUrl())) {
+        if (StringUtils.hasLength(webProperties.getSecurityGuideUrl())) {
             result.put("securityGuideUrl", webProperties.getSecurityGuideUrl());
         }
         

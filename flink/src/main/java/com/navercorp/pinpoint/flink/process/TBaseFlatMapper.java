@@ -21,6 +21,7 @@ import com.navercorp.pinpoint.flink.function.ApplicationStatBoWindow;
 import com.navercorp.pinpoint.flink.mapper.thrift.stat.JoinAgentStatBoMapper;
 import com.navercorp.pinpoint.flink.vo.RawData;
 import com.navercorp.pinpoint.thrift.dto.flink.TFAgentStatBatch;
+import org.apache.flink.api.common.ExecutionConfig.GlobalJobParameters;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
 
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -57,8 +59,9 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
     }
 
     public void open(Configuration parameters) throws Exception {
+        GlobalJobParameters globalJobParameters = getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
         this.joinAgentStatBoMapper = new JoinAgentStatBoMapper();
-        Bootstrap bootstrap = Bootstrap.getInstance();
+        Bootstrap bootstrap = Bootstrap.getInstance(globalJobParameters.toMap());
         applicationCache = bootstrap.getApplicationCache();
         tBaseFlatMapperInterceptor = bootstrap.getTbaseFlatMapperInterceptor();
     }
@@ -75,7 +78,7 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
 
         try {
             List<Tuple3<String, JoinStatBo, Long>> outData = serverRequestFlatMap(tBase);
-            if (outData.size() == 0) {
+            if (outData.isEmpty()) {
                 return;
             }
 
@@ -96,6 +99,8 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
             if (logger.isDebugEnabled()) {
                 logger.debug("raw data : {}", tBase);
             }
+
+            final long time = new Date().getTime() + 3600000;
             final TFAgentStatBatch tFAgentStatBatch = (TFAgentStatBatch) tBase;
             final JoinAgentStatBo joinAgentStatBo;
             try {
@@ -104,17 +109,22 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
                 if (joinAgentStatBo == JoinAgentStatBo.EMPTY_JOIN_AGENT_STAT_BO) {
                     return EMPTY_LIST;
                 }
+
+                if (joinAgentStatBo.getTimestamp() >= time) {
+                    logger.error("timestamp is too big !! {}" , joinAgentStatBo.toString());
+                    return EMPTY_LIST;
+                }
             } catch (Exception e) {
                 logger.error("can't create joinAgentStatBo object {}", tFAgentStatBatch, e);
                 return EMPTY_LIST;
             }
 
-            outData.add(new Tuple3<String, JoinStatBo, Long>(joinAgentStatBo.getId(), joinAgentStatBo, joinAgentStatBo.getTimestamp()));
+            outData.add(new Tuple3<>(joinAgentStatBo.getId(), joinAgentStatBo, joinAgentStatBo.getTimestamp()));
 
             final ApplicationCache.ApplicationKey applicationKey = new ApplicationCache.ApplicationKey(joinAgentStatBo.getId(), joinAgentStatBo.getAgentStartTimestamp());
             final String applicationId = applicationCache.findApplicationId(applicationKey);
 
-            if (applicationId.equals(ApplicationCache.NOT_FOUND_APP_ID)) {
+            if (ApplicationCache.NOT_FOUND_APP_ID.equals(applicationId)) {
                 logger.warn("can't found application id. agent id : {}, start time : {}.",joinAgentStatBo.getId(), joinAgentStatBo.getTimestamp());
                 return EMPTY_LIST;
             }
@@ -122,7 +132,11 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
             List<JoinApplicationStatBo> joinApplicationStatBoList = JoinApplicationStatBo.createJoinApplicationStatBo(applicationId, joinAgentStatBo, ApplicationStatBoWindow.WINDOW_SIZE);
 
             for (JoinApplicationStatBo joinApplicationStatBo : joinApplicationStatBoList) {
-                outData.add(new Tuple3<String, JoinStatBo, Long>(applicationId, joinApplicationStatBo, joinApplicationStatBo.getTimestamp()));
+                if (joinApplicationStatBo.getTimestamp() >= time) {
+                    logger.error("timestamp is too big !! {}" , joinApplicationStatBo.toString());
+                    return EMPTY_LIST;
+                }
+                outData.add(new Tuple3<>(applicationId, joinApplicationStatBo, joinApplicationStatBo.getTimestamp()));
             }
         }
 

@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @author emeroad
@@ -36,25 +37,14 @@ import java.io.IOException;
 @Component
 public class ServerInstanceSerializer extends JsonSerializer<ServerInstance> {
 
-    @Autowired
-    private ServiceTypeRegistryService serviceTypeRegistryService;
+    private final ServiceTypeRegistryService serviceTypeRegistryService;
+
+    private final AgentLifeCycleStateSerializer agentLifeCycleStateSerializer;
 
     @Autowired
-    private AgentLifeCycleStateSerializer agentLifeCycleStateSerializer;
-
-    public ServerInstanceSerializer() {
-    }
-
-    // for Test
-    @Deprecated
-    void setServiceTypeRegistryService(ServiceTypeRegistryService serviceTypeRegistryService) {
-        this.serviceTypeRegistryService = serviceTypeRegistryService;
-    }
-
-    // for Test
-    @Deprecated
-    void setAgentLifeCycleStateSerializer(AgentLifeCycleStateSerializer agentLifeCycleStateSerializer) {
-        this.agentLifeCycleStateSerializer = agentLifeCycleStateSerializer;
+    public ServerInstanceSerializer(ServiceTypeRegistryService serviceTypeRegistryService, AgentLifeCycleStateSerializer agentLifeCycleStateSerializer) {
+        this.serviceTypeRegistryService = Objects.requireNonNull(serviceTypeRegistryService, "serviceTypeRegistryService");
+        this.agentLifeCycleStateSerializer = Objects.requireNonNull(agentLifeCycleStateSerializer, "agentLifeCycleStateSerializer");
     }
 
     @Override
@@ -66,6 +56,7 @@ public class ServerInstanceSerializer extends JsonSerializer<ServerInstance> {
 
         jgen.writeBooleanField("hasInspector", hasInspector(serviceType));
         jgen.writeStringField("name", serverInstance.getName());
+        jgen.writeStringField("agentName", serverInstance.getAgentName());
         jgen.writeStringField("serviceType", serviceType.getName());
 
         jgen.writeFieldName("status");

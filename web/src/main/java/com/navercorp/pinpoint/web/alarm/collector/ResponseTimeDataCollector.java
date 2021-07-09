@@ -30,6 +30,7 @@ import com.navercorp.pinpoint.web.vo.ResponseTime;
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class ResponseTimeDataCollector extends DataCollector {
 
     private final Application application;
@@ -58,7 +59,7 @@ public class ResponseTimeDataCollector extends DataCollector {
             return;
         }
 
-        Range range = Range.createUncheckedRange(timeSlotEndTime - slotInterval, timeSlotEndTime);
+        Range range = Range.newUncheckedRange(timeSlotEndTime - slotInterval, timeSlotEndTime);
         List<ResponseTime> responseTimes = responseDao.selectResponseTime(application, range);
 
         for (ResponseTime responseTime : responseTimes) {

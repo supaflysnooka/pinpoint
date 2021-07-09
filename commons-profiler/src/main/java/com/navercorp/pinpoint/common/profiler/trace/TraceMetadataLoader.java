@@ -253,7 +253,7 @@ public class TraceMetadataLoader {
                     short code1 = o1.value.getCode();
                     short code2 = o2.value.getCode();
 
-                    return code1 > code2 ? 1 : (code1 < code2 ? -1 : 0);
+                    return Integer.compare(code1, code2);
                 }
             });
 
@@ -286,7 +286,7 @@ public class TraceMetadataLoader {
                     int code1 = o1.value.getCode();
                     int code2 = o2.value.getCode();
 
-                    return code1 > code2 ? 1 : (code1 < code2 ? -1 : 0);
+                    return Integer.compare(code1, code2);
                 }
             });
 

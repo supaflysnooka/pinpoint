@@ -16,16 +16,27 @@
 
 package com.navercorp.pinpoint.web.alarm;
 
+import com.navercorp.pinpoint.web.alarm.checker.AgentChecker;
 import com.navercorp.pinpoint.web.alarm.checker.AlarmChecker;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class AlarmMailTemplate {
 
     private static final String LINE_FEED = "<br>";
-    private static final String LINK_FORMAT = "<a href=\"%s\" >%s</a>";
+    private static final String LINK_FORMAT = "<a href=\"%s\" >pinpoint site</a>";
+    private static final String SCATTER_CHART_LINK_FORMAT = "<a href=\"%s/main/%s@%s/5m/%s\" >scatter chart of %s</a>";
+    private static final String INSPECTOR_LINK_FORMAT = " <a href=\"%s/inspector/%s@%s/5m/%s/%s\" >inspector of %s</a>";
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss");
 
     private final String pinpointUrl;
     private final AlarmChecker checker;
@@ -33,29 +44,50 @@ public class AlarmMailTemplate {
     private final int sequenceCount;
 
     public AlarmMailTemplate(AlarmChecker checker, String pinpointUrl, String batchEnv, int sequenceCount) {
-        this.checker = checker;
-        this.pinpointUrl =pinpointUrl;
-        this.batchEnv = batchEnv;
+        this.checker = Objects.requireNonNull(checker, "checker");
+        this.pinpointUrl = Objects.requireNonNull(pinpointUrl, "pinpointUrl");
+        this.batchEnv = Objects.requireNonNull(batchEnv, "batchEnv");
         this.sequenceCount = sequenceCount;
     }
-    
+
     public String createSubject() {
         Rule rule = checker.getRule();
-        return String.format("[PINPOINT-" + batchEnv + "] %s Alarm for %s Service. #%d", rule.getCheckerName(), rule.getApplicationId(), sequenceCount);
+        return String.format("[PINPOINT-%s] %s Alarm for %s Service. #%d", batchEnv, rule.getCheckerName(), rule.getApplicationId(), sequenceCount);
+    }
+
+    public String getCurrentTime() {
+        LocalDateTime now = LocalDateTime.now();
+        return FORMATTER.format(now);
     }
 
     public String createBody() {
         Rule rule = checker.getRule();
+        return newBody(createSubject(), rule.getCheckerName(), rule.getApplicationId(), rule.getServiceType(), getCurrentTime());
+    }
 
+    private String newBody(String subject, String rule, String applicationId, String serviceType, String currentTime) {
         StringBuilder body = new StringBuilder();
-        body.append("<strong>").append(createSubject()).append("</strong>");
+        body.append("<strong>").append(subject).append("</strong>");
         body.append(LINE_FEED);
         body.append(LINE_FEED);
-        body.append(String.format("Rule : %s", rule.getCheckerName()));
+        body.append(String.format("Rule : %s", rule));
         body.append(LINE_FEED);
-        body.append(checker.getEmailMessage());
-        body.append(String.format(LINK_FORMAT, pinpointUrl, pinpointUrl));
-        
+        if (checker instanceof AgentChecker) {
+            AgentChecker agentChecker = (AgentChecker) checker;
+            Set<String> agentIds = agentChecker.getDetectedAgents().keySet();
+
+            for (String agentId : agentIds) {
+                body.append(agentChecker.getEmailMessage());
+                body.append(String.format(INSPECTOR_LINK_FORMAT, pinpointUrl, applicationId, serviceType, currentTime, agentId, agentId));
+                body.append(LINE_FEED);
+            }
+        } else {
+            body.append(checker.getEmailMessage());
+        }
+        body.append(String.format(LINK_FORMAT, pinpointUrl));
+        body.append(LINE_FEED);
+        body.append(String.format(SCATTER_CHART_LINK_FORMAT, pinpointUrl, applicationId, serviceType, currentTime, applicationId));
+
         return body.toString();
     }
 }

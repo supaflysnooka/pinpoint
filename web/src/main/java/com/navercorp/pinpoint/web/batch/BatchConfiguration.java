@@ -15,58 +15,91 @@
  */
 package com.navercorp.pinpoint.web.batch;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import com.navercorp.pinpoint.common.server.config.AnnotationVisitor;
+import com.navercorp.pinpoint.common.server.config.LoggingEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.ConditionContext;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ConfigurationCondition;
-import org.springframework.context.annotation.ImportResource;
 
-import org.springframework.core.type.AnnotatedTypeMetadata;
+import javax.annotation.PostConstruct;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author minwoo.jung<minwoo.jung@navercorp.com>
- *
  */
 @Configuration
-@Conditional(BatchConfiguration.Condition.class)
-@ImportResource("classpath:/batch/applicationContext-batch-schedule.xml")
-public class BatchConfiguration implements InitializingBean {
+public class BatchConfiguration {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(BatchConfiguration.class);
 
-    @Value("#{batchProps['batch.enable'] ?: false}")
-    private boolean enableBatch;
-
-    @Value("#{T(com.navercorp.pinpoint.common.util.StringUtils).tokenizeToStringList((batchProps['batch.flink.server'] ?: ''), ',')}")
-    private List<String> flinkServerList = Collections.emptyList();
-
-    @Value("#{batchProps['batch.server.ip'] ?: null}")
+    @Value("${batch.server.ip:#{null}}")
     private String batchServerIp;
 
-    @Value("#{batchProps['alarm.mail.server.url']}")
+    @Value("${alarm.mail.server.url}")
     private String emailServerUrl;
 
-    @Value("#{batchProps['alarm.mail.sender.address']}")
+    @Value("${alarm.mail.sender.address}")
     private String senderEmailAddress;
 
-    @Value("#{batchProps['pinpoint.url']}")
+    @Value("${pinpoint.url}")
     private String pinpointUrl;
 
-    @Value("#{batchProps['batch.server.env']}")
+    @Value("${webhook.enable}")
+    private boolean webhookEnable;
+
+    @Value("${batch.server.env}")
     private String batchEnv;
 
+    @Value("${batch.flink.server}")
+    private String[] flinkServerList = new String[0];
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        logger.info("BatchConfiguration:{}", this.toString());
+    @Value("${job.cleanup.inactive.agents:false}")
+    private boolean enableCleanupInactiveAgents;
+
+    private static final int DEFAULT_CLEANUP_INACTIVE_AGENTS_DURATION_DAYS = 30;
+    private static final int MINIMUM_CLEANUP_INACTIVE_AGENTS_DURATION_DAYS = 7;
+
+    @Value("${job.cleanup.inactive.agents.duration.days:30}")
+    private int cleanupInactiveAgentsDurationDays;
+
+    // Spring supports `org.springframework.scheduling.annotation.Scheduled#CRON_DISABLED` since Spring 5.x
+    // https://github.com/spring-projects/spring-framework/issues/21397
+    // BatchLauner does not run a job even if cron is executed. Nevertheless, Cron should be disabled if possible.
+    private static final String DISABLED_CLEANUP_INACTIVE_AGENTS_CRON = "0 0 0 29 2 ?";
+
+    @Value("${job.cleanup.inactive.agents.cron:}")
+    private String cleanupInactiveAgentsCron;
+
+
+    @PostConstruct
+    public void setup() {
+        beforeLog();
+
+        if (enableCleanupInactiveAgents == false) {
+            cleanupInactiveAgentsDurationDays = DEFAULT_CLEANUP_INACTIVE_AGENTS_DURATION_DAYS;
+            cleanupInactiveAgentsCron = DISABLED_CLEANUP_INACTIVE_AGENTS_CRON;
+        } else {
+            if (cleanupInactiveAgentsDurationDays < MINIMUM_CLEANUP_INACTIVE_AGENTS_DURATION_DAYS) {
+                throw new IllegalArgumentException("'cleanupInactiveAgentsDuration' must be 'cleanupInactiveAgentsDuration >= 30'");
+            }
+        }
+
+        afterLog();
+    }
+
+    private void beforeLog() {
+        logger.info("before setup field: {}", this);
+        AnnotationVisitor<Value> annotationVisitor = new AnnotationVisitor<>(Value.class);
+        annotationVisitor.visit(this, new LoggingEvent(this.logger));
+    }
+
+    private void afterLog() {
+        logger.info("after setup field : {}", this);
+        AnnotationVisitor<Value> annotationVisitor = new AnnotationVisitor<>(Value.class);
+        annotationVisitor.visit(this, new LoggingEvent(this.logger));
     }
 
     public String getPinpointUrl() {
@@ -78,7 +111,7 @@ public class BatchConfiguration implements InitializingBean {
     }
 
     public List<String> getFlinkServerList() {
-        return flinkServerList;
+        return Arrays.asList(flinkServerList);
     }
 
     public String getEmailServerUrl() {
@@ -93,32 +126,38 @@ public class BatchConfiguration implements InitializingBean {
         return senderEmailAddress;
     }
 
-    static class Condition implements ConfigurationCondition {
+    public boolean isEnableCleanupInactiveAgents() {
+        return enableCleanupInactiveAgents;
+    }
 
-        private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    public int getCleanupInactiveAgentsDurationDays() {
+        return cleanupInactiveAgentsDurationDays;
+    }
 
-        public Condition() {
-        }
-        @Override
-        public ConfigurationPhase getConfigurationPhase() {
-            return ConfigurationPhase.PARSE_CONFIGURATION;
-        }
-        @Override
-        public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-            Properties batchProps = context.getBeanFactory().getBean("batchProps", Properties.class);
-            final String enable = batchProps.getProperty("batch.enable", "false").trim();
-            logger.info("batch.enable:{}", enable);
-            return Boolean.valueOf(enable);
-        }
+    public String getCleanupInactiveAgentsCron() {
+        return cleanupInactiveAgentsCron;
+    }
 
+    public boolean isWebhookEnable() {
+        return webhookEnable;
     }
 
     @Override
     public String toString() {
-        return "BatchConfiguration{" +
-                "enableBatch=" + enableBatch +
-                ", flinkServerList=" + flinkServerList +
-                ", batchServerIp='" + batchServerIp + '\'' +
-                '}';
+        
+        final StringBuilder sb = new StringBuilder("BatchConfiguration{");
+        sb.append("batchServerIp='").append(batchServerIp).append('\'');
+        sb.append(", emailServerUrl='").append(emailServerUrl).append('\'');
+        sb.append(", senderEmailAddress='").append(senderEmailAddress).append('\'');
+        sb.append(", enableWebhook='").append(webhookEnable).append('\'');
+        sb.append(", pinpointUrl='").append(pinpointUrl).append('\'');
+        sb.append(", batchEnv='").append(batchEnv).append('\'');
+        sb.append(", flinkServerList=").append(Arrays.toString(flinkServerList));
+        sb.append(", enableCleanupInactiveAgents=").append(enableCleanupInactiveAgents);
+        sb.append(", cleanupInactiveAgentsDurationDays=").append(cleanupInactiveAgentsDurationDays);
+        sb.append(", cleanupInactiveAgentsCron='").append(cleanupInactiveAgentsCron).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
+
 }

@@ -18,28 +18,31 @@ package com.navercorp.pinpoint.web.alarm;
 
 import com.navercorp.pinpoint.web.batch.DefaultDivider;
 import com.navercorp.pinpoint.web.batch.Divider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ExecutionContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class AlarmPartitioner implements Partitioner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private static final String PARTITION_NAME_PREFIX = "alarm_partition_number_";
     private static final String BATCH_NAME = "alarm_batch";
 
+    private final Divider divider;
 
-    @Autowired(required = false)
-    @Qualifier("divider")
-    private Divider divider = new DefaultDivider();
+    public AlarmPartitioner(@Qualifier("divider") Optional<Divider> divider) {
+        this.divider = divider.orElseGet(DefaultDivider::new);
+    }
 
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {

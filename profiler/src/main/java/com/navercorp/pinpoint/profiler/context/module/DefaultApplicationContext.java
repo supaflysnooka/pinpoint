@@ -28,7 +28,6 @@ import com.navercorp.pinpoint.bootstrap.context.TraceContext;
 import com.navercorp.pinpoint.bootstrap.instrument.DynamicTransformTrigger;
 import com.navercorp.pinpoint.bootstrap.module.ClassFileTransformModuleAdaptor;
 import com.navercorp.pinpoint.bootstrap.module.JavaModuleFactory;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.common.util.JvmUtils;
 import com.navercorp.pinpoint.common.util.JvmVersion;
 import com.navercorp.pinpoint.profiler.AgentInfoSender;
@@ -50,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Constructor;
+import java.util.Objects;
 
 /**
  * @author Woonduk Kang(emeroad)
@@ -80,9 +80,9 @@ public class DefaultApplicationContext implements ApplicationContext {
     private final Injector injector;
 
     public DefaultApplicationContext(AgentOption agentOption, ModuleFactory moduleFactory) {
-        Assert.requireNonNull(agentOption, "agentOption");
-        Assert.requireNonNull(moduleFactory, "moduleFactory");
-        Assert.requireNonNull(agentOption.getProfilerConfig(), "profilerConfig");
+        Objects.requireNonNull(agentOption, "agentOption");
+        Objects.requireNonNull(moduleFactory, "moduleFactory");
+        Objects.requireNonNull(agentOption.getProfilerConfig(), "profilerConfig");
 
         final Instrumentation instrumentation = agentOption.getInstrumentation();
         if (logger.isInfoEnabled()) {

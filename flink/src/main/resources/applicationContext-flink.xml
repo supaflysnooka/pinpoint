@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ Copyright 2018 NAVER Corp.
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~ http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
@@ -25,6 +9,7 @@
 
     <context:annotation-config/>
 
+    <import resource="classpath:applicationContext-flink-profile.xml"/>
     <import resource="classpath:applicationContext-flink-extend.xml"/>
     <import resource="classpath:applicationContext-hbase.xml"/>
     <import resource="classpath:applicationContext-cache.xml"/>
@@ -33,32 +18,9 @@
             base-package="com.navercorp.pinpoint.common.server.util,
                         com.navercorp.pinpoint.collector.mapper.thrift.stat"/>
 
+    <bean id="flinkConfiguration" class="com.navercorp.pinpoint.flink.config.FlinkConfiguration"/>
 
-    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="locations">
-            <list>
-                <value>classpath:hbase.properties</value>
-                <value>classpath:pinpoint-flink.properties</value>
-            </list>
-        </property>
-
-    </bean>
-
-    <util:properties id="pinpoint_flink_properties" location="classpath:pinpoint-flink.properties"/>
-
-
-    <bean id="flinkConfiguration" class="com.navercorp.pinpoint.flink.config.FlinkConfiguration">
-        <property name="properties" ref="pinpoint_flink_properties"/>
-    </bean>
-
-    <bean id="deprecatedConfig" class="com.navercorp.pinpoint.collector.config.DeprecatedConfiguration">
-        <constructor-arg ref="pinpoint_flink_properties"/>
-    </bean>
-
-    <bean id="tcpReceiverConfig" class="com.navercorp.pinpoint.collector.config.AgentBaseDataReceiverConfiguration">
-        <constructor-arg ref="pinpoint_flink_properties"/>
-        <constructor-arg ref="deprecatedConfig"/>
-    </bean>
+    <bean id="tcpReceiverConfig" class="com.navercorp.pinpoint.collector.config.AgentBaseDataReceiverConfiguration"/>
 
     <bean id="tbaseFlatMapper" class="com.navercorp.pinpoint.flink.process.TBaseFlatMapper"/>
 
@@ -101,6 +63,12 @@
     <bean id="joinDirectBufferCodec" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.DirectBufferCodec"/>
     <bean id="directBufferEncoder" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.DirectBufferEncoder"/>
     <bean id="directBufferSerializer" class="com.navercorp.pinpoint.common.server.bo.serializer.stat.join.DirectBufferSerializer"/>
+    <bean id="joinTotalThreadCountCodec" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.TotalThreadCountCodec"/>
+    <bean id="totalThreadCountEncoder" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.TotalThreadCountEncoder"/>
+    <bean id="totalThreadCountSerializer" class="com.navercorp.pinpoint.common.server.bo.serializer.stat.join.TotalThreadCountSerializer"/>
+    <bean id="joinLoadedClassCodec" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.LoadedClassCodec"/>
+    <bean id="loadedClassEncoder" class="com.navercorp.pinpoint.common.server.bo.codec.stat.join.LoadedClassEncoder"/>
+    <bean id="loadedClassSerializer" class="com.navercorp.pinpoint.common.server.bo.serializer.stat.join.LoadedClassSerializer"/>
 
     <bean id="joinAgentStatBoMapper" class="com.navercorp.pinpoint.flink.mapper.thrift.stat.JoinAgentStatBoMapper"/>
 
@@ -162,14 +130,28 @@
         <constructor-arg index="3" ref="tableNameProvider"/>
     </bean>
 
+    <bean id="totalThreadCountDao" class="com.navercorp.pinpoint.flink.dao.hbase.TotalThreadCountDao">
+        <constructor-arg index="0" ref="hbaseTemplate"/>
+        <constructor-arg index="1" ref="applicationStatHbaseOperationFactory"/>
+        <constructor-arg index="2" ref="totalThreadCountSerializer"/>
+        <constructor-arg index="3" ref="tableNameProvider"/>
+    </bean>
+
+    <bean id="loadedClassDao" class="com.navercorp.pinpoint.flink.dao.hbase.LoadedClassDao">
+        <constructor-arg index="0" ref="hbaseTemplate"/>
+        <constructor-arg index="1" ref="applicationStatHbaseOperationFactory"/>
+        <constructor-arg index="2" ref="loadedClassSerializer"/>
+        <constructor-arg index="3" ref="tableNameProvider"/>
+    </bean>
+
     <bean id="handlerManager" class="com.navercorp.pinpoint.collector.manage.HandlerManager">
     </bean>
 
     <!-- DispatchHandler-related Beans -->
     <bean id="tcpDispatchHandler" class="com.navercorp.pinpoint.flink.receiver.TcpDispatchHandler"/>
-    <bean id="tcpDispatchHandlerWrapper" class="com.navercorp.pinpoint.collector.receiver.thrift.DispatchHandlerFactoryBean">
-        <constructor-arg ref="tcpDispatchHandler"/>
-        <constructor-arg ref="handlerManager"/>
+    <bean id="tcpDispatchHandlerWrapper" class="com.navercorp.pinpoint.collector.receiver.DispatchHandlerFactoryBean">
+        <property name="dispatchHandler" ref="tcpDispatchHandler"/>
+        <property name="handlerManager" ref="handlerManager"/>
     </bean>
 
     <bean id="flinkTBaseLocator" class="com.navercorp.pinpoint.thrift.io.FlinkTBaseLocator">
@@ -193,9 +175,6 @@
         <constructor-arg index="1" value="/pinpoint-cluster/flink"/>
     </bean>
 
-    <!-- TCPReceiver related Beans -->
-    <bean id="serverAcceptor" class="com.navercorp.pinpoint.rpc.server.PinpointServerAcceptor"/>
-
     <bean id="metricRegistry" class="com.codahale.metrics.MetricRegistry"/>
 
     <bean id="addressFilter" class="com.navercorp.pinpoint.common.server.util.IgnoreAddressFilter">
@@ -205,7 +184,7 @@
 
     <bean id="discardPolicy" class="java.util.concurrent.ThreadPoolExecutor.DiscardPolicy"/>
 
-    <bean id="flinkWorker" class="com.navercorp.pinpoint.collector.receiver.thrift.ExecutorFactoryBean">
+    <bean id="flinkWorker" class="com.navercorp.pinpoint.collector.receiver.ExecutorFactoryBean">
         <property name="corePoolSize" value="#{tcpReceiverConfig.workerThreadSize}"/>
         <property name="maxPoolSize" value="#{tcpReceiverConfig.workerThreadSize}"/>
         <property name="queueCapacity" value="#{tcpReceiverConfig.workerQueueSize}"/>

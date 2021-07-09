@@ -22,16 +22,16 @@ import com.navercorp.pinpoint.profiler.context.id.TransactionIdEncoder;
 import com.navercorp.pinpoint.profiler.context.thrift.BypassMessageConverter;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
 import com.navercorp.pinpoint.profiler.logging.Slf4jLoggerBinderInitializer;
+import com.navercorp.pinpoint.testcase.util.SocketUtils;
 import com.navercorp.pinpoint.thrift.dto.TAgentInfo;
 
 import org.junit.Assert;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.thrift.TBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.springframework.util.SocketUtils;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

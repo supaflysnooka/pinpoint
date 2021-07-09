@@ -57,7 +57,7 @@ public class ASMTryCatch {
         Collections.sort(this.methodNode.tryCatchBlocks, new Comparator<TryCatchBlockNode>() {
             @Override
             public int compare(TryCatchBlockNode o1, TryCatchBlockNode o2) {
-                return blockLength(o1) - blockLength(o2);
+                return Integer.compare(blockLength(o1), blockLength(o2));
             }
 
             private int blockLength(TryCatchBlockNode block) {

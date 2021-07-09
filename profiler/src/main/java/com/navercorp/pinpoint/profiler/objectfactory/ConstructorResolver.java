@@ -96,8 +96,9 @@ public class ConstructorResolver {
             int p1 = o1.getParameterTypes().length;
             int p2 = o2.getParameterTypes().length;
             
-            return (p1 < p2) ? 1 : ((p1 == p2) ? 0 : -1);
+            return Integer.compare(p2, p1);
         }
+
         
     };
 }

@@ -27,7 +27,6 @@ import com.navercorp.pinpoint.bootstrap.logging.PLogger;
 import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPlugin;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginSetupContext;
-import com.navercorp.pinpoint.bootstrap.plugin.util.InstrumentUtils;
 import com.navercorp.pinpoint.plugin.elasticsearch.accessor.ClusterInfoAccessor;
 import com.navercorp.pinpoint.plugin.elasticsearch.accessor.EndPointAccessor;
 import com.navercorp.pinpoint.plugin.elasticsearch.accessor.HttpHostInfoAccessor;
@@ -112,15 +111,16 @@ public class ElasticsearchPlugin implements ProfilerPlugin, TransformTemplateAwa
 
             target.addField(HttpHostInfoAccessor.class);
 
-            InstrumentMethod client = InstrumentUtils.findConstructor(target
-                    , "org.apache.http.impl.nio.client.CloseableHttpAsyncClient"
+            InstrumentMethod client = target.getConstructor("org.apache.http.impl.nio.client.CloseableHttpAsyncClient"
                     , "long"
                     , "org.apache.http.Header[]"
                     , "org.apache.http.HttpHost[]"
                     , "java.lang.String"
                     , "org.elasticsearch.client.RestClient$FailureListener"
             );
-            client.addScopedInterceptor(RestClientConnectInterceptor.class, ElasticsearchConstants.ELASTICSEARCH_SCOPE, ExecutionPolicy.BOUNDARY);
+            if (client != null) {
+                client.addScopedInterceptor(RestClientConnectInterceptor.class, ElasticsearchConstants.ELASTICSEARCH_SCOPE, ExecutionPolicy.BOUNDARY);
+            }
 
             return target.toBytecode();
         }
@@ -138,10 +138,12 @@ public class ElasticsearchPlugin implements ProfilerPlugin, TransformTemplateAwa
             target.addField(EndPointAccessor.class);
             target.addField(ClusterInfoAccessor.class);
 
-            InstrumentMethod client = InstrumentUtils.findConstructor(target, "org.elasticsearch.client.RestClient"
+            InstrumentMethod client = target.getConstructor("org.elasticsearch.client.RestClient"
                     , "org.elasticsearch.common.CheckedConsumer"
                     , "java.util.List");
-            client.addScopedInterceptor(HighLevelConnectInterceptor.class, ElasticsearchConstants.ELASTICSEARCH_SCOPE, ExecutionPolicy.BOUNDARY);
+            if (client != null) {
+                client.addScopedInterceptor(HighLevelConnectInterceptor.class, ElasticsearchConstants.ELASTICSEARCH_SCOPE, ExecutionPolicy.BOUNDARY);
+            }
 
             for (InstrumentMethod method : target.getDeclaredMethods(MethodFilters.chain(MethodFilters.modifier(Modifier.PUBLIC), MethodFilters.name(methodList())))) {
                 method.addScopedInterceptor(ElasticsearchExecutorInterceptor.class, ElasticsearchConstants.ELASTICSEARCH_EXECUTOR_SCOPE, ExecutionPolicy.BOUNDARY);

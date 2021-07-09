@@ -18,10 +18,10 @@ package com.navercorp.pinpoint.collector.receiver.grpc.service;
 
 import com.navercorp.pinpoint.collector.receiver.DispatchHandler;
 import com.navercorp.pinpoint.collector.receiver.grpc.GrpcServerResponse;
-
 import com.navercorp.pinpoint.io.request.Message;
 import com.navercorp.pinpoint.io.request.ServerRequest;
 import com.navercorp.pinpoint.io.request.ServerResponse;
+
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
@@ -34,23 +34,24 @@ import java.util.Objects;
 /**
  * @author Woonduk Kang(emeroad)
  */
-public class SimpleRequestHandlerAdaptor<T> {
+public class SimpleRequestHandlerAdaptor<REQ, RES> {
     private final Logger logger;
 
-    private final DispatchHandler dispatchHandler;
-    private final ServerRequestFactory serverRequestFactory = new ServerRequestFactory();
+    private final DispatchHandler<REQ, RES> dispatchHandler;
+    private final ServerRequestFactory serverRequestFactory;
 
-    public SimpleRequestHandlerAdaptor(String name, DispatchHandler dispatchHandler) {
+    public SimpleRequestHandlerAdaptor(String name, DispatchHandler<REQ, RES> dispatchHandler, ServerRequestFactory serverRequestFactory) {
         Objects.requireNonNull(name, "name");
         this.logger = LoggerFactory.getLogger(name);
         this.dispatchHandler = Objects.requireNonNull(dispatchHandler, "dispatchHandler");
+        this.serverRequestFactory = Objects.requireNonNull(serverRequestFactory, "serverRequestFactory");
     }
 
-    public void request(Message<?> message, StreamObserver<T> responseObserver) {
+    public void request(Message<? extends REQ> message, StreamObserver<? extends RES> responseObserver) {
         try {
-            final ServerRequest<?> request = serverRequestFactory.newServerRequest(message);
-            final ServerResponse<T> response = new GrpcServerResponse<>(responseObserver);
-            this.dispatchHandler.dispatchRequestMessage(request, response);
+            final ServerRequest<? extends REQ> request = serverRequestFactory.newServerRequest(message);
+            final ServerResponse<? extends RES> response = new GrpcServerResponse<>(responseObserver);
+             this.dispatchHandler.dispatchRequestMessage((ServerRequest<REQ>)request, (ServerResponse<RES>)response);
         } catch (Exception e) {
             logger.warn("Failed to request. message={}", message, e);
             if (e instanceof StatusException || e instanceof StatusRuntimeException) {

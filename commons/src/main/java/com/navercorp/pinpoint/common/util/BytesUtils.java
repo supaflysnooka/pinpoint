@@ -17,10 +17,9 @@
 package com.navercorp.pinpoint.common.util;
 
 
-import com.navercorp.pinpoint.common.Charsets;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author emeroad
@@ -36,8 +35,8 @@ public final class BytesUtils {
 
     private static final byte[] EMPTY_BYTES = new byte[0];
 
-    private static final Charset UTF8_CHARSET = Charsets.UTF_8;
-    private static final String UTF8 = Charsets.UTF_8_NAME;
+    private static final Charset UTF8_CHARSET = StandardCharsets.UTF_8;
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private BytesUtils() {
     }
@@ -521,29 +520,15 @@ public final class BytesUtils {
         return buf;
     }
 
-    @Deprecated
-    public static byte[] add(final long preFix, final short postFix, final int intArg, final short shortArg) {
-        byte[] buf = new byte[LONG_BYTE_LENGTH + SHORT_BYTE_LENGTH + INT_BYTE_LENGTH + SHORT_BYTE_LENGTH];
-        int offset = 0;
-        writeLong(preFix, buf, offset);
-        offset += LONG_BYTE_LENGTH;
-        writeShort(postFix, buf, offset);
-        offset += SHORT_BYTE_LENGTH;
-        writeInt(intArg, buf, offset);
-        offset += INT_BYTE_LENGTH;
-        writeShort(shortArg, buf, offset);
-        return buf;
-    }
-
 
     public static byte[] toBytes(final String value) {
         if (value == null) {
             return null;
         }
         try {
-            return value.getBytes(Charsets.UTF_8_NAME);
+            return value.getBytes(UTF8);
         } catch (UnsupportedEncodingException e) {
-            return value.getBytes(Charsets.UTF_8);
+            return value.getBytes(UTF8_CHARSET);
         }
     }
 

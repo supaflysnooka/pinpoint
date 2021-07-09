@@ -28,6 +28,7 @@ import com.navercorp.pinpoint.web.view.ResponseTimeViewModel;
 import com.navercorp.pinpoint.web.vo.Application;
 import com.navercorp.pinpoint.web.vo.Range;
 
+import com.navercorp.pinpoint.web.vo.ResponseTimeStatics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,32 +50,17 @@ public class AgentTimeHistogram {
     private final AgentHistogramList agentHistogramList;
 
     public AgentTimeHistogram(Application application, Range range) {
-        if (application == null) {
-            throw new NullPointerException("application");
-        }
-        if (range == null) {
-            throw new NullPointerException("range");
-        }
-        this.application = application;
-        this.range = range;
+        this.application = Objects.requireNonNull(application, "application");
+        this.range = Objects.requireNonNull(range, "range");
         this.window = new TimeWindow(range, TimeWindowDownSampler.SAMPLER);
         this.agentHistogramList = new AgentHistogramList();
     }
 
     public AgentTimeHistogram(Application application, Range range, AgentHistogramList agentHistogramList) {
-        if (application == null) {
-            throw new NullPointerException("application");
-        }
-        if (range == null) {
-            throw new NullPointerException("range");
-        }
-        if (agentHistogramList == null) {
-            throw new NullPointerException("agentHistogramList");
-        }
-        this.application = application;
-        this.range = range;
+        this.application = Objects.requireNonNull(application, "application");
+        this.range = Objects.requireNonNull(range, "range");
         this.window = new TimeWindow(range, TimeWindowDownSampler.SAMPLER);
-        this.agentHistogramList = agentHistogramList;
+        this.agentHistogramList = Objects.requireNonNull(agentHistogramList, "agentHistogramList");
     }
 
 
@@ -86,12 +72,7 @@ public class AgentTimeHistogram {
             AgentResponseTimeViewModel model = createAgentResponseTimeViewModel(agentId, timeList);
             result.add(model);
         }
-        result.sort(new Comparator<AgentResponseTimeViewModel>() {
-            @Override
-            public int compare(AgentResponseTimeViewModel o1, AgentResponseTimeViewModel o2) {
-                return o1.getAgentName().compareTo(o2.getAgentName());
-            }
-        });
+        result.sort(Comparator.comparing(AgentResponseTimeViewModel::getAgentName));
         return result;
     }
 
@@ -109,7 +90,7 @@ public class AgentTimeHistogram {
     }
 
     public List<ResponseTimeViewModel> createResponseTimeViewModel(List<TimeHistogram> timeHistogramList) {
-        final List<ResponseTimeViewModel> value = new ArrayList<>(5);
+        final List<ResponseTimeViewModel> value = new ArrayList<>(9);
         ServiceType serviceType = application.getServiceType();
         HistogramSchema schema = serviceType.getHistogramSchema();
         value.add(new ResponseTimeViewModel(schema.getFastSlot().getSlotName(), getColumnValue(SlotType.FAST, timeHistogramList)));
@@ -121,6 +102,10 @@ public class AgentTimeHistogram {
         value.add(new ResponseTimeViewModel(schema.getVerySlowSlot().getSlotName(), getColumnValue(SlotType.VERY_SLOW, timeHistogramList)));
 //        value.add(new ResponseTimeViewModel(schema.getVerySlowErrorSlot().getSlotName(), getColumnValue(SlotType.VERY_SLOW_ERROR, timeHistogramList)));
         value.add(new ResponseTimeViewModel(schema.getErrorSlot().getSlotName(), getColumnValue(SlotType.ERROR, timeHistogramList)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.AVG_ELAPSED_TIME, getAvgValue(timeHistogramList)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.SUM_ELAPSED_TIME, getColumnValue(SlotType.SUM_STAT, timeHistogramList)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.MAX_ELAPSED_TIME, getColumnValue(SlotType.MAX_STAT, timeHistogramList)));
+        value.add(new ResponseTimeViewModel(ResponseTimeStatics.TOTAL_COUNT, getTotalCount(timeHistogramList)));
         return value;
     }
 
@@ -128,6 +113,29 @@ public class AgentTimeHistogram {
         List<ResponseTimeViewModel.TimeCount> result = new ArrayList<>(timeHistogramList.size());
         for (TimeHistogram timeHistogram : timeHistogramList) {
             result.add(new ResponseTimeViewModel.TimeCount(timeHistogram.getTimeStamp(), getCount(timeHistogram, slotType)));
+        }
+        return result;
+    }
+
+    private List<ResponseTimeViewModel.TimeCount> getAvgValue(List<TimeHistogram> timeHistogramList) {
+        List<ResponseTimeViewModel.TimeCount> result = new ArrayList<>(timeHistogramList.size());
+        for (TimeHistogram timeHistogram : timeHistogramList) {
+            final long timeStamp = timeHistogram.getTimeStamp();
+            final long totalCount = timeHistogram.getTotalCount();
+            final long sumElapsed = getCount(timeHistogram, SlotType.SUM_STAT);
+            final long avgElapsed = totalCount > 0 ? sumElapsed / totalCount : 0L;
+
+            result.add(new ResponseTimeViewModel.TimeCount(timeStamp, avgElapsed));
+        }
+        return result;
+    }
+
+    private List<ResponseTimeViewModel.TimeCount> getTotalCount(List<TimeHistogram> timeHistogramList) {
+        List<ResponseTimeViewModel.TimeCount> result = new ArrayList<>(timeHistogramList.size());
+        for (TimeHistogram timeHistogram : timeHistogramList) {
+            final long timeStamp = timeHistogram.getTimeStamp();
+            final long totalCount = timeHistogram.getTotalCount();
+            result.add(new ResponseTimeViewModel.TimeCount(timeStamp, totalCount));
         }
         return result;
     }

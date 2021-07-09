@@ -19,12 +19,12 @@ package com.navercorp.pinpoint.collector.receiver.grpc;
 import com.navercorp.pinpoint.common.server.util.AddressFilter;
 import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.common.util.CollectionUtils;
+import com.navercorp.pinpoint.grpc.channelz.ChannelzRegistry;
 import com.navercorp.pinpoint.grpc.server.MetadataServerTransportFilter;
 import com.navercorp.pinpoint.grpc.server.ServerFactory;
 import com.navercorp.pinpoint.grpc.server.ServerOption;
 import com.navercorp.pinpoint.grpc.server.TransportMetadataFactory;
 import com.navercorp.pinpoint.grpc.server.TransportMetadataServerInterceptor;
-
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerInterceptor;
@@ -35,8 +35,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.NestedExceptionUtils;
 
 import java.io.Closeable;
+import java.net.BindException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -67,11 +70,13 @@ public class GrpcReceiver implements InitializingBean, DisposableBean, BeanNameA
     private ServerOption serverOption;
 
     private Server server;
+    private ChannelzRegistry channelzRegistry;
 
 
     @Override
     public void afterPropertiesSet() throws Exception {
         if (Boolean.FALSE == this.enable) {
+            logger.warn("{} is {}", this.beanName, enable);
             return;
         }
 
@@ -105,6 +110,9 @@ public class GrpcReceiver implements InitializingBean, DisposableBean, BeanNameA
                 this.serverFactory.addInterceptor(serverInterceptor);
             }
         }
+        if (channelzRegistry != null) {
+            this.serverFactory.setChannelzRegistry(channelzRegistry);
+        }
 
         // Add service
         addService();
@@ -113,7 +121,17 @@ public class GrpcReceiver implements InitializingBean, DisposableBean, BeanNameA
         if (logger.isInfoEnabled()) {
             logger.info("Start {} server {}", this.beanName, this.server);
         }
-        this.server.start();
+        try {
+            this.server.start();
+        } catch (Throwable th) {
+            final Throwable rootCause = NestedExceptionUtils.getRootCause(th);
+            if (rootCause instanceof BindException) {
+                logger.error("Server bind failed. {} address:{}/{}", this.beanName, this.bindIp, this.bindPort, rootCause);
+            } else {
+                logger.error("Server start failed. {} address:{}/{}", this.beanName, this.bindIp, this.bindPort);
+            }
+            throw th;
+        }
     }
 
     private void addService() {
@@ -186,13 +204,20 @@ public class GrpcReceiver implements InitializingBean, DisposableBean, BeanNameA
         this.serverOption = serverOption;
     }
 
+    private static final Class<?>[] BINDABLESERVICE_TYPE = {BindableService.class, ServerServiceDefinition.class};
+
+    private static boolean supportType(Object service) {
+        for (Class<?> bindableService : BINDABLESERVICE_TYPE) {
+            if (bindableService.isInstance(service)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void setBindableServiceList(List<Object> serviceList) {
         for (Object service : serviceList) {
-            if (service instanceof BindableService) {
-                //
-            } else if (service instanceof ServerServiceDefinition) {
-                //
-            } else {
+            if (!supportType(service)) {
                 throw new IllegalStateException("unsupported type " + service);
             }
         }
@@ -204,8 +229,13 @@ public class GrpcReceiver implements InitializingBean, DisposableBean, BeanNameA
         this.transportFilterList = transportFilterList;
     }
 
+    @Autowired
     public void setServerInterceptorList(List<ServerInterceptor> serverInterceptorList) {
         this.serverInterceptorList = serverInterceptorList;
+    }
+
+    public void setChannelzRegistry(ChannelzRegistry channelzRegistry) {
+        this.channelzRegistry = Objects.requireNonNull(channelzRegistry, "channelzRegistry");
     }
 
 }

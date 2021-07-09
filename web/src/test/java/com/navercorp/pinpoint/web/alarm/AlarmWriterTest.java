@@ -26,12 +26,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.navercorp.pinpoint.web.alarm.AlarmWriter;
-import com.navercorp.pinpoint.web.alarm.CheckerCategory;
 import com.navercorp.pinpoint.web.alarm.checker.AlarmChecker;
 import com.navercorp.pinpoint.web.alarm.checker.SlowCountChecker;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 
+@SuppressWarnings("deprecation")
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("classpath:applicationContext-test.xml")
 public class AlarmWriterTest {
@@ -42,7 +41,7 @@ public class AlarmWriterTest {
     @Ignore
     @Test
     public void smsSendTest() throws Exception {
-        Rule rule = new Rule("testService", "tomcat", CheckerCategory.SLOW_COUNT.getName(), 100, "testGroup", true, false, "");
+        Rule rule = new Rule("testService", "tomcat", CheckerCategory.SLOW_COUNT.getName(), 100, "testGroup", true, false, false, "");
         SlowCountChecker checker = new SlowCountChecker(null, rule) {
             @Override
             public boolean isDetected() {
@@ -63,7 +62,7 @@ public class AlarmWriterTest {
     @Ignore
     @Test
     public void emailSendTest() throws Exception {
-        Rule rule = new Rule("testService", "tomcat", CheckerCategory.SLOW_COUNT.getName(), 100, "testGroup", false, true, "");
+        Rule rule = new Rule("testService", "tomcat", CheckerCategory.SLOW_COUNT.getName(), 100, "testGroup", false, true, false, "");
         SlowCountChecker checker = new SlowCountChecker(null, rule) {
             @Override
             public boolean isDetected() {

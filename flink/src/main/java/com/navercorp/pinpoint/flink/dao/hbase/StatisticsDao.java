@@ -20,7 +20,8 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinApplicationStatBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.StatType;
 import com.navercorp.pinpoint.flink.Bootstrap;
-import org.apache.flink.api.common.io.OutputFormat;
+import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.io.RichOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.CollectionUtil;
@@ -34,7 +35,7 @@ import java.util.List;
 /**
  * @author minwoo.jung
  */
-public class StatisticsDao implements OutputFormat<Tuple3<String, JoinStatBo, Long>> {
+public class StatisticsDao extends RichOutputFormat<Tuple3<String, JoinStatBo, Long>> {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private static final long serialVersionUID = 1L;
@@ -46,15 +47,14 @@ public class StatisticsDao implements OutputFormat<Tuple3<String, JoinStatBo, Lo
     private transient DataSourceDao dataSourceDao;
     private transient FileDescriptorDao fileDescriptorDao;
     private transient DirectBufferDao directBufferDao;
+    private transient TotalThreadCountDao totalThreadCountDao;
+    private transient LoadedClassDao loadedClassDao;
     private transient StatisticsDaoInterceptor statisticsDaoInterceptor;
-
-
-    public StatisticsDao() {
-    }
 
     @Override
     public void configure(Configuration parameters) {
-        Bootstrap bootstrap = Bootstrap.getInstance();
+        ExecutionConfig.GlobalJobParameters globalJobParameters = getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
+        Bootstrap bootstrap = Bootstrap.getInstance(globalJobParameters.toMap());
         cpuLoadDao = bootstrap.getCpuLoadDao();
         memoryDao = bootstrap.getMemoryDao();
         transactionDao = bootstrap.getTransactionDao();
@@ -63,6 +63,8 @@ public class StatisticsDao implements OutputFormat<Tuple3<String, JoinStatBo, Lo
         dataSourceDao = bootstrap.getDataSourceDao();
         fileDescriptorDao = bootstrap.getFileDescriptorDao();
         directBufferDao = bootstrap.getDirectBufferDao();
+        totalThreadCountDao = bootstrap.getTotalThreadCountDao();
+        loadedClassDao = bootstrap.getLoadedClassDao();
         statisticsDaoInterceptor = bootstrap.getStatisticsDaoInterceptor();
     }
 
@@ -99,6 +101,8 @@ public class StatisticsDao implements OutputFormat<Tuple3<String, JoinStatBo, Lo
         List<JoinStatBo> joinDataSourceBoList = castJoinStatBoList(joinApplicationStatBo.getJoinDataSourceListBoList());
         List<JoinStatBo> joinFileDescriptorBoList = castJoinStatBoList(joinApplicationStatBo.getJoinFileDescriptorBoList());
         List<JoinStatBo> joinDirectBufferBoList = castJoinStatBoList(joinApplicationStatBo.getJoinDirectBufferBoList());
+        List<JoinStatBo> joinTotalThreadCountBoList = castJoinStatBoList(joinApplicationStatBo.getJoinTotalThreadCountBoList());
+        List<JoinStatBo> joinLoadedClassBoList = castJoinStatBoList(joinApplicationStatBo.getJoinLoadedClassBoList());
 
         if (joinApplicationStatBo.getStatType() == StatType.APP_STST_AGGRE) {
 //            logger.info("insert application aggre : " + new Date(joinApplicationStatBo.getTimestamp()) + " ("+ joinApplicationStatBo.getApplicationId() + " )");
@@ -113,6 +117,8 @@ public class StatisticsDao implements OutputFormat<Tuple3<String, JoinStatBo, Lo
             dataSourceDao.insert(id, timestamp, joinDataSourceBoList, StatType.APP_DATA_SOURCE);
             fileDescriptorDao.insert(id, timestamp, joinFileDescriptorBoList, StatType.APP_FILE_DESCRIPTOR);
             directBufferDao.insert(id, timestamp, joinDirectBufferBoList, StatType.APP_DIRECT_BUFFER);
+            totalThreadCountDao.insert(id, timestamp, joinTotalThreadCountBoList, StatType.APP_TOTAL_THREAD_COUNT);
+            loadedClassDao.insert(id, timestamp, joinLoadedClassBoList, StatType.APP_LOADED_CLASS);
         }
     }
 

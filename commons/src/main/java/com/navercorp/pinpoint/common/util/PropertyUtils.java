@@ -16,16 +16,20 @@
 
 package com.navercorp.pinpoint.common.util;
 
-import com.navercorp.pinpoint.common.Charsets;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 /**
  * @author emeroad
  */
 public final class PropertyUtils {
-    public static final String DEFAULT_ENCODING = Charsets.UTF_8_NAME;
+    public static final String DEFAULT_ENCODING = StandardCharsets.UTF_8.name();
 
     private static final ClassLoaderUtils.ClassLoaderCallable CLASS_LOADER_CALLABLE = new ClassLoaderUtils.ClassLoaderCallable() {
         @Override
@@ -45,12 +49,7 @@ public final class PropertyUtils {
         if (filePath == null) {
             throw new NullPointerException("filePath");
         }
-        final InputStreamFactory inputStreamFactory = new InputStreamFactory() {
-            @Override
-            public InputStream openInputStream() throws IOException {
-                return new FileInputStream(filePath);
-            }
-        };
+        final InputStreamFactory inputStreamFactory = new FileInputStreamFactory(filePath);
         return loadProperty(new Properties(), inputStreamFactory, DEFAULT_ENCODING);
     }
 
@@ -102,6 +101,22 @@ public final class PropertyUtils {
             IOUtils.closeQuietly(in);
         }
         return properties;
+    }
+
+    public static class FileInputStreamFactory implements  InputStreamFactory {
+        private final String filePath;
+
+        public FileInputStreamFactory(String filePath) {
+            if (filePath == null) {
+                throw new NullPointerException("filePath");
+            }
+            this.filePath = filePath;
+        }
+
+        @Override
+        public InputStream openInputStream() throws IOException {
+            return new FileInputStream(filePath);
+        }
     }
 
 }

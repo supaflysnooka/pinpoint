@@ -19,7 +19,7 @@ package com.navercorp.pinpoint.loader.plugins.trace;
 import com.navercorp.pinpoint.common.trace.LoadedTraceMetadataProvider;
 import com.navercorp.pinpoint.common.trace.ParsedTraceMetadataProvider;
 import com.navercorp.pinpoint.common.trace.TraceMetadataProvider;
-import com.navercorp.pinpoint.common.util.Assert;
+import com.navercorp.pinpoint.common.util.Filter;
 import com.navercorp.pinpoint.loader.plugins.PinpointPluginLoader;
 import com.navercorp.pinpoint.loader.plugins.trace.yaml.TraceMetadataProviderYamlParser;
 import org.slf4j.Logger;
@@ -33,11 +33,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
  * @author HyunGil Jeong
+ * @author Taejin Koo
  */
 public class TraceMetadataProviderLoader implements PinpointPluginLoader<TraceMetadataProvider> {
 
@@ -47,6 +49,7 @@ public class TraceMetadataProviderLoader implements PinpointPluginLoader<TraceMe
 
     private final String typeProviderDefEntry;
     private final Collection<URL> customTypeProviderUrls;
+    private final Filter<URL> pluginTypeProviderUrlFilter;
     private final TraceMetadataProviderParser traceMetadataProviderParser = new TraceMetadataProviderYamlParser();
 
     public TraceMetadataProviderLoader() {
@@ -54,8 +57,18 @@ public class TraceMetadataProviderLoader implements PinpointPluginLoader<TraceMe
     }
 
     public TraceMetadataProviderLoader(Collection<URL> customTypeProviderUrls) {
+        this(customTypeProviderUrls, new Filter<URL>() {
+            @Override
+            public boolean filter(URL value) {
+                return NOT_FILTERED;
+            }
+        });
+    }
+
+    public TraceMetadataProviderLoader(Collection<URL> customTypeProviderUrls, Filter<URL> pluginTypeProviderUrlFilter) {
         this.typeProviderDefEntry = TYPE_PROVIDER_DEF_ENTRY;
-        this.customTypeProviderUrls = Assert.requireNonNull(customTypeProviderUrls, "customTypeProviderUrls");
+        this.customTypeProviderUrls = Objects.requireNonNull(customTypeProviderUrls, "customTypeProviderUrls");
+        this.pluginTypeProviderUrlFilter = Objects.requireNonNull(pluginTypeProviderUrlFilter, "pluginTypeProviderUrlFilter");
     }
 
     @Override
@@ -84,10 +97,23 @@ public class TraceMetadataProviderLoader implements PinpointPluginLoader<TraceMe
 
     private List<URL> getTypeProviderUrls(ClassLoader classLoader) {
         List<URL> typeProviderUrls = new ArrayList<URL>(customTypeProviderUrls);
+
+        for (URL customTypeProviderUrl : customTypeProviderUrls) {
+            if (pluginTypeProviderUrlFilter.filter(customTypeProviderUrl)) {
+                continue;
+            }
+            typeProviderUrls.add(customTypeProviderUrl);
+        }
+
         try {
             Enumeration<URL> pluginTypeProviderUrls = classLoader.getResources(typeProviderDefEntry);
             while (pluginTypeProviderUrls.hasMoreElements()) {
-                typeProviderUrls.add(pluginTypeProviderUrls.nextElement());
+                URL pluginTypeProviderUrl = pluginTypeProviderUrls.nextElement();
+                if (pluginTypeProviderUrlFilter.filter(pluginTypeProviderUrl)) {
+                    continue;
+                }
+
+                typeProviderUrls.add(pluginTypeProviderUrl);
             }
         } catch (IOException e) {
             throw new IllegalStateException("I/O error getting type provider definitions", e);

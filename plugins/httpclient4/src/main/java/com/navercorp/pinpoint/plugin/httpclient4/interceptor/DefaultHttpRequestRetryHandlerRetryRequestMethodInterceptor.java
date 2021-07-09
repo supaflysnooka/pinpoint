@@ -18,78 +18,40 @@ package com.navercorp.pinpoint.plugin.httpclient4.interceptor;
 
 import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
-import com.navercorp.pinpoint.bootstrap.context.Trace;
 import com.navercorp.pinpoint.bootstrap.context.TraceContext;
-import com.navercorp.pinpoint.bootstrap.interceptor.AroundInterceptor;
-import com.navercorp.pinpoint.bootstrap.logging.PLogger;
-import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
+import com.navercorp.pinpoint.bootstrap.interceptor.SpanEventSimpleAroundInterceptorForPlugin;
 import com.navercorp.pinpoint.common.trace.AnnotationKey;
 import com.navercorp.pinpoint.common.trace.ServiceType;
+import com.navercorp.pinpoint.common.util.ArrayUtils;
 import com.navercorp.pinpoint.plugin.httpclient4.HttpClient4Constants;
 
 /**
  * @author Minwoo Jung
  * @author jaehong.kim
  */
-public class DefaultHttpRequestRetryHandlerRetryRequestMethodInterceptor implements AroundInterceptor {
+public class DefaultHttpRequestRetryHandlerRetryRequestMethodInterceptor extends SpanEventSimpleAroundInterceptorForPlugin {
 
-    private final PLogger logger = PLoggerFactory.getLogger(this.getClass());
-    private final boolean isDebug = logger.isDebugEnabled();
-
-    private final MethodDescriptor descriptor;
-    private final TraceContext traceContext;
     private final ServiceType serviceType = HttpClient4Constants.HTTP_CLIENT_4_INTERNAL;
 
     public DefaultHttpRequestRetryHandlerRetryRequestMethodInterceptor(TraceContext context, MethodDescriptor methodDescriptor) {
-        if (context == null) {
-            throw new NullPointerException("context");
-        }
-        if (methodDescriptor == null) {
-            throw new NullPointerException("methodDescriptor");
-        }
-        this.traceContext = context;
-        this.descriptor = methodDescriptor;
+        super(context, methodDescriptor);
     }
 
     @Override
-    public void before(Object target, Object[] args) {
-        if (isDebug) {
-            logger.beforeInterceptor(target, args);
-        }
-
-        final Trace trace = traceContext.currentTraceObject();
-        if (trace == null) {
-            return;
-        }
-
-        SpanEventRecorder recorder = trace.traceBlockBegin();
+    protected void doInBeforeTrace(SpanEventRecorder recorder, Object target, Object[] args) {
         recorder.recordServiceType(serviceType);
     }
 
     @Override
-    public void after(Object target, Object[] args, Object result, Throwable throwable) {
-        if (isDebug) {
-            logger.afterInterceptor(target, args);
-        }
+    protected void doInAfterTrace(SpanEventRecorder recorder, Object target, Object[] args, Object result, Throwable throwable) {
+        recorder.recordApi(methodDescriptor);
+        recorder.recordException(throwable);
 
-        final Trace trace = traceContext.currentTraceObject();
-        if (trace == null) {
-            return;
-        }
+        final String retryMessage = getRetryMessage(args);
+        recorder.recordAttribute(AnnotationKey.HTTP_INTERNAL_DISPLAY, retryMessage);
 
-        try {
-            final SpanEventRecorder recorder = trace.currentSpanEventRecorder();
-            recorder.recordApi(descriptor);
-            recorder.recordException(throwable);
-
-            final String retryMessage = getRetryMessage(args);
-            recorder.recordAttribute(AnnotationKey.HTTP_INTERNAL_DISPLAY, retryMessage);
-
-            if (result != null) {
-                recorder.recordAttribute(AnnotationKey.RETURN_DATA, result);
-            }
-        } finally {
-            trace.traceBlockEnd();
+        if (result != null) {
+            recorder.recordAttribute(AnnotationKey.RETURN_DATA, result);
         }
     }
 
@@ -99,11 +61,13 @@ public class DefaultHttpRequestRetryHandlerRetryRequestMethodInterceptor impleme
         }
         // arguments(final IOException exception, final int executionCount, final HttpContext context)
         final StringBuilder sb = new StringBuilder();
-        if (args.length >= 1 && args[0] instanceof Exception) {
-            sb.append(args[0].getClass().getName()).append(", ");
+        final Object ex = ArrayUtils.get(args, 0);
+        if (ex instanceof Exception) {
+            sb.append(ex.getClass().getName()).append(", ");
         }
-        if (args.length >= 2 && args[1] instanceof Integer) {
-            sb.append(args[1]);
+        final Object executionCount = ArrayUtils.get(args, 1);
+        if (executionCount instanceof Integer) {
+            sb.append(executionCount);
         }
         return sb.toString();
     }

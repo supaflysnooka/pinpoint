@@ -23,6 +23,7 @@ CREATE TABLE `puser` (
   `user_id` VARCHAR(30) NOT NULL,
   `name` VARCHAR(150) NOT NULL,
   `department` VARCHAR(150) NOT NULL,
+  `phone_country_code` int(10) NOT NULL DEFAULT '0',
   `phonenumber` VARCHAR(100),
   `email` VARCHAR(100),
   PRIMARY KEY (`number`)
@@ -38,6 +39,7 @@ CREATE TABLE `alarm_rule` (
   `user_group_id` VARCHAR(30) NOT NULL,
   `sms_send` CHAR(1) DEFAULT NULL,
   `email_send` CHAR(1) DEFAULT NULL,
+  `webhook_send` CHAR(1) DEFAULT NULL,
   `notes` VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (`rule_id`)
 );

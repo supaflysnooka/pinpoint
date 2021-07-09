@@ -16,7 +16,6 @@
 
 package com.navercorp.pinpoint.collector.manage.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -25,6 +24,8 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.navercorp.pinpoint.collector.manage.HandlerManager;
 
+import java.util.Objects;
+
 /**
  * @author Taejin Koo
  */
@@ -32,8 +33,11 @@ import com.navercorp.pinpoint.collector.manage.HandlerManager;
 @RequestMapping("/admin")
 public class HandlerManagerController {
 
-    @Autowired
-    private HandlerManager handlerManager;
+    private final HandlerManager handlerManager;
+
+    public HandlerManagerController(HandlerManager handlerManager) {
+        this.handlerManager = Objects.requireNonNull(handlerManager, "handlerManager");
+    }
 
     @RequestMapping(value = "/enableAccess", method = RequestMethod.GET)
     @ResponseBody

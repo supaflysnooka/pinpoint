@@ -15,25 +15,25 @@
  */
 package com.navercorp.pinpoint.web.view;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.navercorp.pinpoint.common.profiler.util.TransactionId;
+import com.navercorp.pinpoint.common.profiler.util.TransactionIdUtils;
+import com.navercorp.pinpoint.common.server.util.DateTimeFormatUtils;
+import com.navercorp.pinpoint.web.applicationmap.link.Link;
+import com.navercorp.pinpoint.web.applicationmap.nodes.Node;
+import com.navercorp.pinpoint.web.calltree.span.TraceState;
+import com.navercorp.pinpoint.web.config.LogConfiguration;
+import com.navercorp.pinpoint.web.vo.callstacks.Record;
+import com.navercorp.pinpoint.web.vo.callstacks.RecordSet;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.navercorp.pinpoint.common.profiler.util.TransactionId;
-import com.navercorp.pinpoint.common.profiler.util.TransactionIdUtils;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.navercorp.pinpoint.common.util.DateUtils;
-import com.navercorp.pinpoint.web.applicationmap.link.Link;
-import com.navercorp.pinpoint.web.applicationmap.nodes.Node;
-import com.navercorp.pinpoint.web.calltree.span.TraceState;
-import com.navercorp.pinpoint.web.vo.callstacks.Record;
-import com.navercorp.pinpoint.web.vo.callstacks.RecordSet;
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
+import java.util.Objects;
 
 /**
  * @author jaehong.kim
@@ -41,28 +41,23 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class TransactionInfoViewModel {
 
-    private TransactionId transactionId;
-    private long spanId;
-    private Collection<Node> nodes;
-    private Collection<Link> links;
-    private RecordSet recordSet;
-    private TraceState.State completeState;
-    private boolean logLinkEnable;
-    private String logButtonName;
-    private String logPageUrl;
-    private String disableButtonMessage;
+    private final TransactionId transactionId;
+    private final long spanId;
+    private final Collection<Node> nodes;
+    private final Collection<Link> links;
+    private final RecordSet recordSet;
+    private final TraceState.State completeState;
 
-    public TransactionInfoViewModel(TransactionId transactionId, long spanId, Collection<Node> nodes, Collection<Link> links, RecordSet recordSet, TraceState.State state, boolean logLinkEnable, String logButtonName, String logPageUrl, String disableButtonMessage) {
+    private final LogConfiguration logConfiguration;
+
+    public TransactionInfoViewModel(TransactionId transactionId, long spanId, Collection<Node> nodes, Collection<Link> links, RecordSet recordSet, TraceState.State state, LogConfiguration logConfiguration) {
         this.transactionId = transactionId;
         this.spanId = spanId;
         this.nodes = nodes;
         this.links = links;
         this.recordSet = recordSet;
         this.completeState = state;
-        this.logLinkEnable = logLinkEnable;
-        this.logButtonName = logButtonName;
-        this.logPageUrl = logPageUrl;
-        this.disableButtonMessage = disableButtonMessage;
+        this.logConfiguration = Objects.requireNonNull(logConfiguration, "logConfiguration");
     }
 
     @JsonProperty("applicationName")
@@ -83,6 +78,11 @@ public class TransactionInfoViewModel {
     @JsonProperty("agentId")
     public String getAgentId() {
         return recordSet.getAgentId();
+    }
+
+    @JsonProperty("agentName")
+    public String getAgentName() {
+        return recordSet.getAgentName();
     }
 
     @JsonProperty("applicationId")
@@ -107,7 +107,7 @@ public class TransactionInfoViewModel {
 
     @JsonProperty("logLinkEnable")
     public boolean isLogLinkEnable() {
-        return logLinkEnable;
+        return logConfiguration.isLogLinkEnable();
     }
 
     @JsonProperty("loggingTransactionInfo")
@@ -117,11 +117,12 @@ public class TransactionInfoViewModel {
 
     @JsonProperty("logButtonName")
     public String getLogButtonName() {
-        return logButtonName;
+        return logConfiguration.getLogButtonName();
     }
 
     @JsonProperty("logPageUrl")
     public String getLogPageUrl() {
+        final String logPageUrl = logConfiguration.getLogPageUrl();
         if (StringUtils.isNotEmpty(logPageUrl)) {
             StringBuilder sb = new StringBuilder();
             sb.append("transactionId=").append(getTransactionId());
@@ -136,7 +137,7 @@ public class TransactionInfoViewModel {
 
     @JsonProperty("disableButtonMessage")
     public String getDisableButtonMessage() {
-        return disableButtonMessage;
+        return logConfiguration.getDisableButtonMessage();
     }
 
     @JsonProperty("callStackIndex")
@@ -166,6 +167,7 @@ public class TransactionInfoViewModel {
                 }
                 first = false;
             }
+
             list.add(new CallStack(record, barRatio));
         }
 
@@ -210,7 +212,8 @@ public class TransactionInfoViewModel {
                 "agent",
                 "isFocused",
                 "hasException",
-                "isAuthorized"
+                "isAuthorized",
+                "agentName"
         };
 
         private String depth = "";
@@ -234,6 +237,7 @@ public class TransactionInfoViewModel {
         private String methodType = "";
         private String apiType = "";
         private String agent = "";
+        private String agentName = "";
         private boolean isFocused;
         private boolean hasException;
         private boolean isAuthorized;
@@ -250,11 +254,10 @@ public class TransactionInfoViewModel {
             }
             isMethod = record.isMethod();
             hasChild = record.getHasChild();
-            title = StringEscapeUtils.escapeJson(record.getTitle());
-            //arguments = StringEscapeUtils.escapeJson(StringEscapeUtils.escapeHtml4(record.getArguments()));
+            title = record.getTitle();
             arguments = record.getArguments();
             if (record.isMethod()) {
-                executeTime = DateUtils.longToDateStr(record.getBegin(), "HH:mm:ss SSS"); // time format
+                executeTime = DateTimeFormatUtils.formatAbsolute(record.getBegin()); // time format
                 gap = String.valueOf(record.getGap());
                 elapsedTime = String.valueOf(record.getElapsed());
                 barWidth = String.format("%1d", (int)(((end - begin) * barRatio) + 0.9));
@@ -263,7 +266,8 @@ public class TransactionInfoViewModel {
             simpleClassName = record.getSimpleClassName();
             methodType = String.valueOf(record.getMethodTypeEnum().getCode());
             apiType = record.getApiType();
-            agent = record.getAgent();
+            agent = record.getAgentId();
+            agentName = record.getAgentName();
             isFocused = record.isFocused();
             hasException = record.getHasException();
             isAuthorized = record.isAuthorized();
@@ -351,6 +355,10 @@ public class TransactionInfoViewModel {
 
         public String getAgent() {
             return agent;
+        }
+
+        public String getAgentName() {
+            return agentName;
         }
 
         public boolean isFocused() {

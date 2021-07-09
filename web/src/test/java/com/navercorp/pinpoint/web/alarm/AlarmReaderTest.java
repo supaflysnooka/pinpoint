@@ -18,12 +18,15 @@ package com.navercorp.pinpoint.web.alarm;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.navercorp.pinpoint.web.batch.BatchConfiguration;
+import com.navercorp.pinpoint.web.dao.AlarmDao;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.batch.core.StepExecution;
@@ -69,10 +72,10 @@ public class AlarmReaderTest {
         ExecutionContext executionContext = new ExecutionContext();
         stepExecution.setExecutionContext(executionContext);
         
-        AlarmServiceImpl alarmService = new AlarmServiceImpl() {
+        AlarmServiceImpl alarmService = new AlarmServiceImpl(mock(AlarmDao.class)) {
             @Override
             public java.util.List<Rule> selectRuleByApplicationId(String applicationId) {
-                return new LinkedList<Rule>();
+                return new LinkedList<>();
             }
         };
         
@@ -95,6 +98,13 @@ public class AlarmReaderTest {
                 return apps;
             }
 
+            @Override
+            public List<Application> selectApplicationName(String applicationName) {
+                List<Application> apps = new LinkedList<Application>();
+                apps.add(new Application(APP_NAME, ServiceType.STAND_ALONE));
+                return apps;
+            }
+
             @Override public List<String> selectAgentIds(String applicationName) {return null;}
             @Override public void deleteApplicationName(String applicationName) { }
 
@@ -104,21 +114,21 @@ public class AlarmReaderTest {
             @Override public void deleteAgentId(String applicationName, String agentId) {}
             
         };
-        
-        alarmService = new AlarmServiceImpl() {
-            private Map<String, Rule> ruleMap ;
-            
+
+        alarmService = new AlarmServiceImpl(mock(AlarmDao.class)) {
+            private final Map<String, Rule> ruleMap ;
+
             {
                 ruleMap = new HashMap<String, Rule>();
 
                 for(int i = 0; i <=6; i++) {
-                    ruleMap.put(APP_NAME + i, new Rule(APP_NAME + i, SERVICE_TYPE, CheckerCategory.SLOW_COUNT.getName(), 76, "testGroup", false, false, ""));
+                    ruleMap.put(APP_NAME + i, new Rule(APP_NAME + i, SERVICE_TYPE, CheckerCategory.SLOW_COUNT.getName(), 76, "testGroup", false, false, false, ""));
                 }
             }
-            
+
             @Override
             public List<Rule> selectRuleByApplicationId(String applicationId) {
-                List<Rule> rules = new LinkedList<Rule>();
+                List<Rule> rules = new LinkedList<>();
                 rules.add(ruleMap.get(applicationId));
                 return rules;
             }

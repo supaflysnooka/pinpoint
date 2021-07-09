@@ -31,6 +31,7 @@ import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginSetupContext;
 import com.navercorp.pinpoint.plugin.redis.lettuce.interceptor.AttachEndPointInterceptor;
 import com.navercorp.pinpoint.plugin.redis.lettuce.interceptor.LettuceMethodInterceptor;
 import com.navercorp.pinpoint.plugin.redis.lettuce.interceptor.RedisClientConstructorInterceptor;
+import com.navercorp.pinpoint.plugin.redis.lettuce.interceptor.RedisClusterClientConstructorInterceptor;
 
 import java.security.ProtectionDomain;
 
@@ -50,9 +51,8 @@ public class LettucePlugin implements ProfilerPlugin, TransformTemplateAware {
             logger.info("{} disabled", this.getClass().getSimpleName());
             return;
         }
-        logger.info("{} config:{}", this.getClass().getSimpleName(), config);
         if (logger.isInfoEnabled()) {
-            logger.info("Enable LettucePlugin. version range=[5.0.0.RELEASE, 5.1.2.RELEASE]");
+            logger.info("{} version range=[5.0.0.RELEASE, 5.2.1.RELEASE], config={}", this.getClass().getSimpleName(), config);
         }
 
         // Set endpoint
@@ -68,6 +68,7 @@ public class LettucePlugin implements ProfilerPlugin, TransformTemplateAware {
 
     private void addRedisClient() {
         transformTemplate.transform("io.lettuce.core.RedisClient", RedisClientTransform.class);
+        transformTemplate.transform("io.lettuce.core.cluster.RedisClusterClient", RedisClientTransform.class);
     }
 
     public static class RedisClientTransform implements TransformCallback {
@@ -80,6 +81,12 @@ public class LettucePlugin implements ProfilerPlugin, TransformTemplateAware {
             final InstrumentMethod constructor = target.getConstructor("io.lettuce.core.resource.ClientResources", "io.lettuce.core.RedisURI");
             if (constructor != null) {
                 constructor.addInterceptor(RedisClientConstructorInterceptor.class);
+            }
+
+            // Set cluster endpoint
+            final InstrumentMethod clusterConstructor = target.getConstructor("io.lettuce.core.resource.ClientResources", "java.lang.Iterable");
+            if (clusterConstructor != null) {
+                clusterConstructor.addInterceptor(RedisClusterClientConstructorInterceptor.class);
             }
 
             // Attach endpoint
@@ -112,6 +119,7 @@ public class LettucePlugin implements ProfilerPlugin, TransformTemplateAware {
 
     private void addStatefulRedisConnection() {
         addStatefulRedisConnection("io.lettuce.core.StatefulRedisConnectionImpl");
+        addStatefulRedisConnection("io.lettuce.core.cluster.StatefulRedisClusterConnectionImpl");
         addStatefulRedisConnection("io.lettuce.core.pubsub.StatefulRedisPubSubConnectionImpl");
         addStatefulRedisConnection("io.lettuce.core.pubsub.StatefulRedisClusterPubSubConnectionImpl");
         addStatefulRedisConnection("io.lettuce.core.masterslave.StatefulRedisMasterSlaveConnectionImpl");

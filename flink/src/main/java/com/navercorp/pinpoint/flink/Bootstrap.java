@@ -30,15 +30,21 @@ import com.navercorp.pinpoint.flink.vo.RawData;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.util.Map;
 
 /**
  * @author minwoo.jung
  */
 public class Bootstrap {
+    private static final Logger logger = LoggerFactory.getLogger(Bootstrap.class);
+    private static final String SPRING_PROFILE = "spring.profiles.active";
 
-    private final static Bootstrap INSTANCE = new Bootstrap();
+    private volatile static Bootstrap instance;
 
     private final StatisticsDao statisticsDao;
 
@@ -57,6 +63,8 @@ public class Bootstrap {
     private final DataSourceDao dataSourceDao;
     private final FileDescriptorDao fileDescriptorDao;
     private final DirectBufferDao directBufferDao;
+    private final TotalThreadCountDao totalThreadCountDao;
+    private final LoadedClassDao loadedClassDao;
     private final TBaseFlatMapperInterceptor tBaseFlatMapperInterceptor;
     private final StatisticsDaoInterceptor statisticsDaoInterceptor;
     private final ApplicationStatBoWindowInterceptor applicationStatBoWindowInterceptor;
@@ -77,8 +85,10 @@ public class Bootstrap {
         activeTraceDao = applicationContext.getBean("activeTraceDao", ActiveTraceDao.class);
         responseTimeDao = applicationContext.getBean("responseTimeDao", ResponseTimeDao.class);
         dataSourceDao = applicationContext.getBean("dataSourceDao", DataSourceDao.class);
+        totalThreadCountDao = applicationContext.getBean("totalThreadCountDao", TotalThreadCountDao.class);
         fileDescriptorDao = applicationContext.getBean("fileDescriptorDao", FileDescriptorDao.class);
         directBufferDao = applicationContext.getBean("directBufferDao", DirectBufferDao.class);
+        loadedClassDao = applicationContext.getBean("loadedClassDao", LoadedClassDao.class);
         tBaseFlatMapperInterceptor = applicationContext.getBean("tBaseFlatMapperInterceptor", TBaseFlatMapperInterceptor.class);
         statisticsDaoInterceptor =  applicationContext.getBean("statisticsDaoInterceptor", StatisticsDaoInterceptor.class);
         applicationStatBoWindowInterceptor = applicationContext.getBean("applicationStatBoWindowInterceptor", ApplicationStatBoWindowInterceptor.class);
@@ -89,8 +99,19 @@ public class Bootstrap {
         return fileDescriptorDao;
     }
 
-    public static Bootstrap getInstance() {
-        return INSTANCE;
+    public static Bootstrap getInstance(Map<String, String> jobParameters) {
+        if (instance == null)  {
+            synchronized(Bootstrap.class) {
+                if (instance == null) {
+                    String profiles = jobParameters.getOrDefault(SPRING_PROFILE, "local");
+                    System.setProperty(SPRING_PROFILE, profiles);
+                    instance = new Bootstrap();
+                    logger.info("Bootstrap initialization. : job parameter " + jobParameters);
+                }
+            }
+        }
+
+        return instance;
     }
 
     public ApplicationContext getApplicationContext() {
@@ -128,6 +149,10 @@ public class Bootstrap {
     public DirectBufferDao getDirectBufferDao() {
         return directBufferDao;
     }
+
+    public TotalThreadCountDao getTotalThreadCountDao() { return totalThreadCountDao; }
+
+    public LoadedClassDao getLoadedClassDao() { return loadedClassDao; }
 
     public TBaseFlatMapper getTbaseFlatMapper() {
         return tbaseFlatMapper;

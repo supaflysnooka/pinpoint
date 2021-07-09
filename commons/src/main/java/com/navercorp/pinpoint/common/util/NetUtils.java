@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author koo.taejin
@@ -50,8 +51,8 @@ public final class NetUtils {
     private NetUtils() {
     }
 
-    public static List<InetSocketAddress> toInetSocketAddressLIst(List<String> addressList) {
-        return toHostAndPortLIst(addressList, inetSocketAddressFactory);
+    public static List<InetSocketAddress> toInetSocketAddressList(List<String> addressList) {
+        return toHostAndPortList(addressList, inetSocketAddressFactory);
     }
 
 
@@ -59,7 +60,7 @@ public final class NetUtils {
         T newInstance(String host, int port);
     }
 
-    public static <T> List<T> toHostAndPortLIst(List<String> addressList, HostAndPortFactory<T> hostAndPortFactory) {
+    public static <T> List<T> toHostAndPortList(List<String> addressList, HostAndPortFactory<T> hostAndPortFactory) {
         if (CollectionUtils.isEmpty(addressList)) {
             return Collections.emptyList();
         }
@@ -82,7 +83,7 @@ public final class NetUtils {
         if (StringUtils.isEmpty(address)) {
             return null;
         }
-        Assert.requireNonNull(hostAndPortFactory, "hostAndPortFactory");
+        Objects.requireNonNull(hostAndPortFactory, "hostAndPortFactory");
 
         final int hostIndex = address.indexOf(':');
         if (hostIndex == -1) {

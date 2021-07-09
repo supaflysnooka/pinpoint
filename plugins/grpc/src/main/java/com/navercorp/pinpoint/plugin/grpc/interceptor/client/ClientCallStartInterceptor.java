@@ -28,11 +28,12 @@ import com.navercorp.pinpoint.bootstrap.plugin.request.DefaultRequestTraceWriter
 import com.navercorp.pinpoint.bootstrap.plugin.request.RequestTraceWriter;
 import com.navercorp.pinpoint.common.trace.AnnotationKey;
 import com.navercorp.pinpoint.common.util.ArrayUtils;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.plugin.grpc.GrpcConstants;
 import com.navercorp.pinpoint.plugin.grpc.field.accessor.MethodNameAccessor;
 import com.navercorp.pinpoint.plugin.grpc.field.accessor.RemoteAddressAccessor;
 import io.grpc.Metadata;
+
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -60,7 +61,7 @@ public class ClientCallStartInterceptor implements AroundInterceptor {
             logger.beforeInterceptor(target, args);
         }
 
-        final Trace trace = traceContext.currentTraceObject();
+        final Trace trace = traceContext.currentRawTraceObject();
         if (trace == null) {
             return;
         }
@@ -120,8 +121,8 @@ public class ClientCallStartInterceptor implements AroundInterceptor {
 
 
     private String combineAddressAndMethodName(String remoteAddress, String methodName) {
-        Assert.requireNonNull(remoteAddress, "remoteAddress");
-        Assert.requireNonNull(methodName, "methodName");
+        Objects.requireNonNull(remoteAddress, "remoteAddress");
+        Objects.requireNonNull(methodName, "methodName");
 
         if (remoteAddress.startsWith("http")) {
             return remoteAddress + "/" + methodName;

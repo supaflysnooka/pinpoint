@@ -37,7 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 
 /**
  * @author emeroad
@@ -68,8 +67,9 @@ public class ResponseTimeMapper implements RowMapper<ResponseTime> {
                 recordColumn(responseTime, cell);
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("unknown column family:{}", Arrays.toString(CellUtil.cloneFamily(cell)));
+            if (logger.isTraceEnabled()) {
+                String columnFamily = Bytes.toString(cell.getFamilyArray(), cell.getFamilyOffset(), cell.getFamilyLength());
+                logger.trace("unknown column family:{}", columnFamily);
             }
         }
         return responseTime;

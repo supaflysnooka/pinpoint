@@ -16,8 +16,8 @@
 
 package com.navercorp.pinpoint.web.controller;
 
-import com.navercorp.pinpoint.common.util.DateUtils;
 import com.navercorp.pinpoint.web.service.AgentStatisticsService;
+import com.navercorp.pinpoint.web.util.DateTimeUtils;
 import com.navercorp.pinpoint.web.vo.AgentCountStatistics;
 import com.navercorp.pinpoint.web.vo.Range;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ import java.util.Map;
 public class AgentStatisticsController {
 
     @Autowired
-    AgentStatisticsService agentStatisticsService;
+    private AgentStatisticsService agentStatisticsService;
 
     @RequestMapping(value = "/insertAgentCount", method = RequestMethod.GET, params = {"agentCount"})
     @ResponseBody
@@ -58,7 +59,7 @@ public class AgentStatisticsController {
             return result;
         }
 
-        AgentCountStatistics agentCountStatistics = new AgentCountStatistics(agentCount, DateUtils.timestampToMidNight(timestamp));
+        AgentCountStatistics agentCountStatistics = new AgentCountStatistics(agentCount, DateTimeUtils.timestampToStartOfDay(timestamp));
         boolean success = agentStatisticsService.insertAgentCount(agentCountStatistics);
 
         if (success) {
@@ -88,21 +89,13 @@ public class AgentStatisticsController {
     @RequestMapping(value = "/selectAgentCount", method = RequestMethod.GET, params = {"from", "to"})
     @ResponseBody
     public List<AgentCountStatistics> selectAgentCount(@RequestParam("from") long from, @RequestParam("to") long to) {
-        Range range = new Range(DateUtils.timestampToMidNight(from), DateUtils.timestampToMidNight(to), true);
+        Range range = Range.newRange(DateTimeUtils.timestampToStartOfDay(from), DateTimeUtils.timestampToStartOfDay(to));
         List<AgentCountStatistics> agentCountStatisticsList = agentStatisticsService.selectAgentCount(range);
 
-        agentCountStatisticsList.sort(new Comparator<AgentCountStatistics>() {
-            @Override
-            public int compare(AgentCountStatistics o1, AgentCountStatistics o2) {
-                if (o1.getTimestamp() > o2.getTimestamp()) {
-                    return -1;
-                } else {
-                    return 1;
-                }
-            }
-        });
+        agentCountStatisticsList.sort(Comparator.comparingLong(AgentCountStatistics::getTimestamp).reversed());
 
         return agentCountStatisticsList;
     }
+
 
 }

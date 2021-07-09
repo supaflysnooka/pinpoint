@@ -16,51 +16,49 @@
 
 package com.navercorp.pinpoint.collector.config;
 
-import com.navercorp.pinpoint.common.util.PropertyUtils;
-import com.navercorp.pinpoint.common.util.SimpleProperty;
-import com.navercorp.pinpoint.common.util.SystemProperty;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
+import com.navercorp.pinpoint.common.server.config.AnnotationVisitor;
+import com.navercorp.pinpoint.common.server.config.LoggingEvent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Collections;
+import javax.annotation.PostConstruct;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 
 /**
  * @author emeroad
+ * @author jaehong.kim
  */
-public class CollectorConfiguration implements InitializingBean {
+public class CollectorConfiguration {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectorConfiguration.class);
-
-    private static final String CONFIG_FILE_NAME = "pinpoint-collector.properties";
-    static final String DEFAULT_LISTEN_IP = "0.0.0.0";
-
-    private Properties properties;
-
-    private SimpleProperty SYSTEM_PROPERTY = SystemProperty.INSTANCE;
-
-    public void setProperties(Properties properties) {
-        this.properties = properties;
-    }
-
+    @Value("${collector.agentEventWorker.threadSize:32}")
     private int agentEventWorkerThreadSize;
+    @Value("${collector.agentEventWorker.queueSize:5120}")
     private int agentEventWorkerQueueSize;
-    
-    private List<String> l4IpList = Collections.emptyList();
-
+    @Value("${collector.l4.ip:}")
+    private String[] l4IpList = new String[0];
+    @Value("${collector.metric.jmx:false}")
+    private boolean metricJmxEnable;
+    @Value("${collector.metric.jmx.domain:pinpoint.collector.metrics}")
+    private String metricJmxDomainName;
+    @Value("${cluster.enable}")
     private boolean clusterEnable;
+    @Value("${cluster.zookeeper.address:}")
     private String clusterAddress;
+    @Value("${cluster.zookeeper.sessiontimeout:-1}")
     private int clusterSessionTimeout;
-
+    @Value("${cluster.listen.ip:}")
     private String clusterListenIp;
+    @Value("${cluster.listen.port:-1}")
     private int clusterListenPort;
+    @Value("${collector.stat.uri:false}")
+    private boolean uriStatEnable;
+    @Value("${collector.statistics.agent-state.enable:false}")
+    private boolean statisticsAgentStateEnable;
 
     public int getAgentEventWorkerThreadSize() {
         return this.agentEventWorkerThreadSize;
@@ -69,7 +67,7 @@ public class CollectorConfiguration implements InitializingBean {
     public void setAgentEventWorkerThreadSize(int agentEventWorkerThreadSize) {
         this.agentEventWorkerThreadSize = agentEventWorkerThreadSize;
     }
-    
+
     public int getAgentEventWorkerQueueSize() {
         return agentEventWorkerQueueSize;
     }
@@ -79,11 +77,28 @@ public class CollectorConfiguration implements InitializingBean {
     }
 
     public List<String> getL4IpList() {
-        return l4IpList;
+        return Arrays.asList(l4IpList);
     }
 
     public void setL4IpList(List<String> l4IpList) {
-        this.l4IpList = l4IpList;
+        Objects.requireNonNull(l4IpList, "l4IpList");
+        this.l4IpList = l4IpList.toArray(new String[0]);
+    }
+
+    public boolean isMetricJmxEnable() {
+        return metricJmxEnable;
+    }
+
+    public void setMetricJmxEnable(boolean metricJmxEnable) {
+        this.metricJmxEnable = metricJmxEnable;
+    }
+
+    public String getMetricJmxDomainName() {
+        return metricJmxDomainName;
+    }
+
+    public void setMetricJmxDomainName(String metricJmxDomainName) {
+        this.metricJmxDomainName = metricJmxDomainName;
     }
 
     public boolean isClusterEnable() {
@@ -126,95 +141,27 @@ public class CollectorConfiguration implements InitializingBean {
         this.clusterListenPort = clusterListenPort;
     }
 
-    public void readConfigFile() {
-
-        // may be useful for some kind of standalone like testcase. It should be modified to read a classpath for testcase.
-        String configFileName = SYSTEM_PROPERTY.getProperty(CONFIG_FILE_NAME);
-        if (configFileName == null) {
-            LOGGER.warn("Property is not set. Using default values. PROPERTY_NAME={}, defaultValue={}", CONFIG_FILE_NAME, this);
-            return;
-        }
-
-        try {
-            Properties prop = PropertyUtils.loadProperty(configFileName);
-            readPropertyValues(prop);
-        } catch (FileNotFoundException fe) {
-            LOGGER.error("File '{}' is not exists. Please check configuration.", configFileName, fe);
-        } catch (Exception e) {
-            LOGGER.error("File '{}' error. Please check configuration.", configFileName, e);
-        }
-
+    public boolean isUriStatEnable() {
+        return uriStatEnable;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        final Properties properties = Objects.requireNonNull(this.properties, "properties");
-        readPropertyValues(properties);
+    public void setUriStatEnable(boolean uriStatEnable) {
+        this.uriStatEnable = uriStatEnable;
     }
 
-    protected  void readPropertyValues(Properties properties) {
-        LOGGER.info("pinpoint-collector.properties read.");
-
-        this.agentEventWorkerThreadSize = readInt(properties, "collector.agentEventWorker.threadSize", 32);
-        this.agentEventWorkerQueueSize = readInt(properties, "collector.agentEventWorker.queueSize", 1024 * 5);
-
-        String[] l4Ips = StringUtils.split(readString(properties, "collector.l4.ip", null), ",");
-        if (l4Ips == null) {
-            this.l4IpList = Collections.emptyList();
-        } else {
-            this.l4IpList = new ArrayList<>(l4Ips.length);
-            for (String l4Ip : l4Ips) {
-                if (!StringUtils.isEmpty(l4Ip)) {
-                    this.l4IpList.add(StringUtils.trim(l4Ip));
-                }
-            }
-        }
-        
-        this.clusterEnable = readBoolean(properties, "cluster.enable");
-        this.clusterAddress = readString(properties, "cluster.zookeeper.address", "");
-        this.clusterSessionTimeout = readInt(properties, "cluster.zookeeper.sessiontimeout", -1);
-
-        this.clusterListenIp = readString(properties, "cluster.listen.ip", "");
-        this.clusterListenPort = readInt(properties, "cluster.listen.port", -1);
+    public void setStatisticsAgentStateEnable(boolean statisticsAgentStateEnable) {
+        this.statisticsAgentStateEnable = statisticsAgentStateEnable;
     }
 
-    protected static String readString(Properties properties, String propertyName, String defaultValue) {
-        final String result = properties.getProperty(propertyName, defaultValue);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{}={}", propertyName, result);
-        }
-        return result ;
+    public boolean isStatisticsAgentStateEnable() {
+        return statisticsAgentStateEnable;
     }
 
-    protected static int readInt(Properties properties, String propertyName, int defaultValue) {
-        final String value = properties.getProperty(propertyName);
-        final int result = NumberUtils.toInt(value, defaultValue);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{}={}", propertyName, result);
-        }
-        return result;
-    }
-
-    protected static long readLong(Properties properties, String propertyName, long defaultValue) {
-        final String value = properties.getProperty(propertyName);
-        final long result = NumberUtils.toLong(value, defaultValue);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{}={}", propertyName, result);
-        }
-        return result;
-    }
-
-    protected static boolean readBoolean(Properties properties, String propertyName) {
-        final String value = properties.getProperty(propertyName);
-        
-        // if a default value will be needed afterwards, may match string value instead of Utils.
-        // for now stay unmodified because of no need.
-
-        final boolean result = Boolean.valueOf(value);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("{}={}", propertyName, result);
-        }
-        return result;
+    @PostConstruct
+    public void log() {
+        logger.info("{}", this);
+        AnnotationVisitor<Value> visitor = new AnnotationVisitor<>(Value.class);
+        visitor.visit(this, new LoggingEvent(logger));
     }
 
     @Override
@@ -222,14 +169,17 @@ public class CollectorConfiguration implements InitializingBean {
         final StringBuilder sb = new StringBuilder("CollectorConfiguration{");
         sb.append("agentEventWorkerThreadSize=").append(agentEventWorkerThreadSize);
         sb.append(", agentEventWorkerQueueSize=").append(agentEventWorkerQueueSize);
-        sb.append(", l4IpList=").append(l4IpList);
+        sb.append(", l4IpList=").append(Arrays.toString(l4IpList));
+        sb.append(", metricJmxEnable=").append(metricJmxEnable);
+        sb.append(", metricJmxDomainName='").append(metricJmxDomainName).append('\'');
         sb.append(", clusterEnable=").append(clusterEnable);
         sb.append(", clusterAddress='").append(clusterAddress).append('\'');
         sb.append(", clusterSessionTimeout=").append(clusterSessionTimeout);
         sb.append(", clusterListenIp='").append(clusterListenIp).append('\'');
         sb.append(", clusterListenPort=").append(clusterListenPort);
+        sb.append(", uriStatEnable=").append(uriStatEnable);
+        sb.append(", statisticsAgentStateEnable=").append(statisticsAgentStateEnable);
         sb.append('}');
         return sb.toString();
     }
-
 }

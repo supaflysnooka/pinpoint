@@ -33,13 +33,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class MapStatisticsCallerDataCollector extends DataCollector {
 
-    private Application application;
-    private MapStatisticsCallerDao mapStatisticsCallerDao;
-    private long timeSlotEndTime;
-    private long slotInterval;
-    private Map<String, LinkCallData> calleeStatMap = new HashMap<>();
+    private final Application application;
+    private final MapStatisticsCallerDao mapStatisticsCallerDao;
+    private final long timeSlotEndTime;
+    private final long slotInterval;
+    private final Map<String, LinkCallData> calleeStatMap = new HashMap<>();
     private final AtomicBoolean init = new AtomicBoolean(false); // need to consider a trace condition when checkers start simultaneously.
 
     public MapStatisticsCallerDataCollector(DataCollectorCategory category, Application application, MapStatisticsCallerDao mapStatisticsCallerDao, long timeSlotEndTime, long slotInterval) {
@@ -56,7 +57,7 @@ public class MapStatisticsCallerDataCollector extends DataCollector {
             return;
         }
 
-        LinkDataMap callerDataMap = mapStatisticsCallerDao.selectCaller(application, new Range(timeSlotEndTime - slotInterval, timeSlotEndTime));
+        LinkDataMap callerDataMap = mapStatisticsCallerDao.selectCaller(application, Range.newRange(timeSlotEndTime - slotInterval, timeSlotEndTime));
 
         for (LinkData linkData : callerDataMap.getLinkDataList()) {
             LinkCallDataMap linkCallDataMap = linkData.getLinkCallDataMap();

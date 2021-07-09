@@ -20,7 +20,6 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.StringValue;
 import com.navercorp.pinpoint.bootstrap.context.TraceId;
 import com.navercorp.pinpoint.common.annotations.VisibleForTesting;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.common.util.CollectionUtils;
 import com.navercorp.pinpoint.common.util.IntStringValue;
 import com.navercorp.pinpoint.grpc.trace.PAcceptEvent;
@@ -35,6 +34,7 @@ import com.navercorp.pinpoint.grpc.trace.PSpan;
 import com.navercorp.pinpoint.grpc.trace.PSpanChunk;
 import com.navercorp.pinpoint.grpc.trace.PSpanEvent;
 import com.navercorp.pinpoint.grpc.trace.PTransactionId;
+import com.navercorp.pinpoint.io.SpanVersion;
 import com.navercorp.pinpoint.profiler.context.Annotation;
 import com.navercorp.pinpoint.profiler.context.AsyncId;
 import com.navercorp.pinpoint.profiler.context.AsyncSpanChunk;
@@ -46,13 +46,14 @@ import com.navercorp.pinpoint.profiler.context.compress.SpanProcessor;
 import com.navercorp.pinpoint.profiler.context.id.Shared;
 import com.navercorp.pinpoint.profiler.context.id.TraceRoot;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
-import com.navercorp.pinpoint.io.SpanVersion;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Not thread safe
+ *
  * @author Woonduk Kang(emeroad)
  */
 public class GrpcSpanMessageConverter implements MessageConverter<GeneratedMessageV3> {
@@ -70,9 +71,9 @@ public class GrpcSpanMessageConverter implements MessageConverter<GeneratedMessa
 
     public GrpcSpanMessageConverter(String agentId, short applicationServiceType,
                                     SpanProcessor<PSpan.Builder, PSpanChunk.Builder> spanProcessor) {
-        this.agentId = Assert.requireNonNull(agentId, "agentId");
+        this.agentId = Objects.requireNonNull(agentId, "agentId");
         this.applicationServiceType = applicationServiceType;
-        this.spanProcessor = Assert.requireNonNull(spanProcessor, "spanProcessor");
+        this.spanProcessor = Objects.requireNonNull(spanProcessor, "spanProcessor");
 
     }
 
@@ -181,15 +182,30 @@ public class GrpcSpanMessageConverter implements MessageConverter<GeneratedMessa
     }
 
     private PParentInfo newParentInfo(Span span) {
+        final PParentInfo.Builder builder = PParentInfo.newBuilder();
+        // For the Queue service type, the acceptorHost value can be stored even without the parentApplicationName value.
+        // @See com.navercorp.pinpoint.collector.service.TraceService
+        boolean isChanged = false;
         final String parentApplicationName = span.getParentApplicationName();
-        if (parentApplicationName == null) {
+        if (parentApplicationName != null) {
+            builder.setParentApplicationName(parentApplicationName);
+            isChanged = true;
+        }
+        final short parentApplicationType = span.getParentApplicationType();
+        if (parentApplicationType != 0) {
+            builder.setParentApplicationType(parentApplicationType);
+            isChanged = true;
+        }
+        final String acceptorHost = span.getAcceptorHost();
+        if (acceptorHost != null) {
+            builder.setAcceptorHost(acceptorHost);
+            isChanged = true;
+        }
+        if (isChanged) {
+            return builder.build();
+        } else {
             return null;
         }
-        PParentInfo.Builder builder = PParentInfo.newBuilder();
-        builder.setParentApplicationName(parentApplicationName);
-        builder.setParentApplicationType(span.getParentApplicationType());
-        builder.setAcceptorHost(span.getAcceptorHost());
-        return builder.build();
     }
 
     private List<PSpanEvent> buildPSpanEventList(List<SpanEvent> spanEventList) {

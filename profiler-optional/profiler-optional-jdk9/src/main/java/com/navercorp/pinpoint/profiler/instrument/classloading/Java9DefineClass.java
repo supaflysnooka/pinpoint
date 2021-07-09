@@ -32,6 +32,12 @@ final class Java9DefineClass implements DefineClass {
         if (logger.isDebugEnabled()) {
             logger.debug("define class:{} cl:{}", name, classLoader);
         }
-        return jdk.internal.misc.SharedSecrets.getJavaLangAccess().defineClass(classLoader, name, bytes, null, null);
+        final JavaLangAccess javaLangAccess = JavaLangAccessHelper.getJavaLangAccess();
+        try {
+            return javaLangAccess.defineClass(classLoader, name, bytes, null, null);
+        } catch (Throwable e) {
+            logger.warn("{} define fail cl:{} Caused by:{}", name, classLoader, e.getMessage(), e);
+            throw new RuntimeException(name + " define fail Caused by:" + e.getMessage(), e);
+        }
     }
 }

@@ -16,6 +16,8 @@
 
 package com.navercorp.pinpoint.profiler.receiver.grpc;
 
+import java.util.Objects;
+
 import com.navercorp.pinpoint.common.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +45,7 @@ public class GrpcStreamService {
     private final List<GrpcProfilerStreamSocket> grpcProfilerStreamSocketList = new CopyOnWriteArrayList<GrpcProfilerStreamSocket>();
 
     public GrpcStreamService(String name, long flushDelay) {
-        Assert.requireNonNull(name, "name");
+        Objects.requireNonNull(name, "name");
         Assert.isTrue(flushDelay > 0, "flushDelay must be >= 0");
         this.timer = new Timer("Pinpoint-Grpc-" + name + "-Timer", true);
         this.flushDelay = flushDelay;
@@ -59,7 +61,7 @@ public class GrpcStreamService {
             boolean turnOn = currentTaskReference.compareAndSet(null, timerTask);
             if (turnOn) {
                 logger.info("turn on TimerTask.");
-                timer.scheduleAtFixedRate(timerTask, flushDelay, flushDelay);
+                timer.scheduleAtFixedRate(timerTask, 0, flushDelay);
                 return true;
             }
         }
