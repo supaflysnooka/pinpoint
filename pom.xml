@@ -145,7 +145,7 @@
         <spring.security5.version>5.4.6</spring.security5.version>
         <spring.security.version>${spring.security4.version}</spring.security.version>
 
-        <spring.boot.version>2.4.5</spring.boot.version>
+        <spring.boot.version>2.5.4</spring.boot.version>
 
         <slf4j.version>1.7.30</slf4j.version>
         <log4j2-jdk7.version>2.12.1</log4j2-jdk7.version>
@@ -1067,7 +1067,7 @@
                     <version>1.6.0</version>
                     <configuration>
                         <options>sub, boss, newcap, loopfunc</options>
-                        <globals></globals>
+                        <globals/>
                         <directories>
                             <directory>src/main/webapp</directory>
                         </directories>
