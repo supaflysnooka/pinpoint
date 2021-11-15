@@ -17,15 +17,18 @@ package com.navercorp.pinpoint.plugin.elasticsearchbboss;
 
 import com.navercorp.pinpoint.bootstrap.plugin.test.PluginTestVerifier;
 import com.navercorp.pinpoint.bootstrap.plugin.test.PluginTestVerifierHolder;
+import com.navercorp.pinpoint.test.plugin.shared.AfterSharedClass;
+import com.navercorp.pinpoint.test.plugin.shared.BeforeSharedClass;
+
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.client.ClientInterface;
 import org.frameworkset.elasticsearch.entity.ESDatas;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import pl.allegro.tech.embeddedelasticsearch.EmbeddedElastic;
 import pl.allegro.tech.embeddedelasticsearch.PopularProperties;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,8 +50,8 @@ public abstract class ElasticsearchExecutorIT {
     private static ClientInterface configRestClientInterface;
     private String serviceType = "ElasticsearchBBoss";
 
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
+    @BeforeSharedClass
+    public static void sharedSetup() throws IOException, InterruptedException {
         // BBoss support elasticsearch 1.x,2.x,5.x,6.x,7.x,+
         // and we use elasticsearch 6.3.0 to test the Elasticsearch BBoss client plugin.
 
@@ -66,7 +69,17 @@ public abstract class ElasticsearchExecutorIT {
                 .withStartTimeout(2, MINUTES)
                 .build()
                 .start();
+    }
 
+    @AfterSharedClass
+    public static void sharedTearDown() {
+        if (embeddedElastic != null) {
+            embeddedElastic.stop();
+        }
+    }
+
+    @BeforeClass
+    public static void setUpBeforeClass() throws Exception {
         //Build a elasticsearch client instance(Return a single instance but multithreaded security) with dsl config file elasticsearchbboss/car-mapping.xml.
         configRestClientInterface = ElasticSearchHelper.getConfigRestClientUtil("elasticsearchbboss/car-mapping.xml");
         // Create an elasticsearch client interface instance with a specific Elasticserch datasource name  and with dsl config file elasticsearchbboss/car-mapping.xml.
@@ -80,23 +93,15 @@ public abstract class ElasticsearchExecutorIT {
         // A multidatasource spring boot demo: https://github.com/bbossgroups/es_bboss_web/tree/multiesdatasource
     }
 
-    @AfterClass
-    public static void tearDownAfterClass() {
-        if (embeddedElastic != null) {
-            embeddedElastic.stop();
-        }
-    }
-
-
     @Test
     public void indiceCreate() throws Exception {
         PluginTestVerifier verifier = PluginTestVerifierHolder.getInstance();
-        Class configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
+        Class<?> configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
         Method createIndiceMappingMethod = configClass.getMethod("createIndiceMapping", String.class, String.class);
         try {
             configRestClientInterface.createIndiceMapping("cars", "createCarIndice");
 
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
 
@@ -108,11 +113,11 @@ public abstract class ElasticsearchExecutorIT {
     @Test
     public void indiceDrop() throws Exception {
         PluginTestVerifier verifier = PluginTestVerifierHolder.getInstance();
-        Class configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
+        Class<?> configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
         Method dropIndiceMethod = configClass.getMethod("dropIndice", String.class);
         try {
             configRestClientInterface.dropIndice("cars");
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
 
@@ -131,7 +136,7 @@ public abstract class ElasticsearchExecutorIT {
         boolean existIndice = clientInterface.existIndice("cars");
 
 //		Assert.assertEquals(existIndice,true);
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method existIndiceMethod = restClientUtilClass.getMethod("existIndice", String.class);
         verifier.verifyTrace(event(serviceType, existIndiceMethod));
 
@@ -139,7 +144,7 @@ public abstract class ElasticsearchExecutorIT {
 
     @Test
     public void addDocument() throws Exception {
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method addDocumentMethod = restClientUtilClass.getDeclaredMethod("addDocument", String.class, String.class,
                 Object.class, String.class);
         PluginTestVerifier verifier = PluginTestVerifierHolder.getInstance();
@@ -155,7 +160,7 @@ public abstract class ElasticsearchExecutorIT {
         // clientInterface.addDocument("cars",car).
         try {
             clientInterface.addDocument("cars", "car", car, "refresh=true");
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
 
@@ -169,12 +174,12 @@ public abstract class ElasticsearchExecutorIT {
         //get car by document id "1"
         try {
             Car car = clientInterface.getDocument("cars", "1", Car.class);
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
 
 
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method getDocumentMethod = restClientUtilClass.getDeclaredMethod("getDocument", String.class,
                 String.class, Class.class);
         verifier.verifyTrace(event(serviceType, getDocumentMethod));
@@ -183,7 +188,7 @@ public abstract class ElasticsearchExecutorIT {
     @Test
     public void bulkDocuments() throws Exception {
         PluginTestVerifier verifier = PluginTestVerifierHolder.getInstance();
-        List<Car> cars = new ArrayList<Car>();
+        List<Car> cars = new ArrayList<>();
         Car car = new Car();
         //set carid as the index documentid
         car.setCarId("2");
@@ -204,10 +209,10 @@ public abstract class ElasticsearchExecutorIT {
 
         try {
             clientInterface.addDocuments("cars", "car", cars, "refresh=true");
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method addDocumentsMethod = restClientUtilClass.getDeclaredMethod("addDocuments", String.class, String.class,
                 List.class, String.class);
         verifier.verifyTrace(event(serviceType, addDocumentsMethod));
@@ -229,11 +234,11 @@ public abstract class ElasticsearchExecutorIT {
             List<Car> cars = carESDatas.getDatas();
             //totalsize that match condition
             long totalSize = carESDatas.getTotalSize();
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
 
-        Class configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
+        Class<?> configClass = Class.forName("org.frameworkset.elasticsearch.client.ConfigRestClientUtil");
         Method searchListMethod = configClass.getDeclaredMethod("searchList", String.class,
                 String.class, Map.class, Class.class);
         verifier.verifyTrace(event(serviceType, searchListMethod));
@@ -256,10 +261,10 @@ public abstract class ElasticsearchExecutorIT {
 
         try {
             clientInterface.updateDocument("cars", "car", "1", car, "refresh=true");
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method updateDocumentMethod = restClientUtilClass.getDeclaredMethod("updateDocument", String.class, String.class,
                 Object.class, Object.class, String.class);
         verifier.verifyTrace(event(serviceType, updateDocumentMethod));
@@ -276,10 +281,10 @@ public abstract class ElasticsearchExecutorIT {
 
         try {
             clientInterface.deleteDocument("cars", "car", "1", "refresh=true");
-        } catch (Exception e) {
+        } catch (Exception ignore) {
 
         }
-        Class restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
+        Class<?> restClientUtilClass = Class.forName("org.frameworkset.elasticsearch.client.RestClientUtil");
         Method deleteDocument = restClientUtilClass.getDeclaredMethod("deleteDocument", String.class, String.class,
                 String.class, String.class);
         verifier.verifyTrace(event(serviceType, deleteDocument));

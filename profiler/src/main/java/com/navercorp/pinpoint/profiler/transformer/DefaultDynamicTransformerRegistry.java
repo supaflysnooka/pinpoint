@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultDynamicTransformerRegistry implements DynamicTransformerRegistry {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final ConcurrentMap<TransformerKey, ClassFileTransformer> transformerMap = new ConcurrentHashMap<TransformerKey, ClassFileTransformer>();
+    private final ConcurrentMap<TransformerKey, ClassFileTransformer> transformerMap = new ConcurrentHashMap<>();
 
     @Inject
     public DefaultDynamicTransformerRegistry() {
@@ -150,10 +150,7 @@ public class DefaultDynamicTransformerRegistry implements DynamicTransformerRegi
         private final TransformerKey key;
 
         public DefaultRequestHandle(TransformerKey key) {
-            if (key == null) {
-                throw new NullPointerException("key");
-            }
-            this.key = key;
+            this.key = Objects.requireNonNull(key, "key");
         }
 
         @Override

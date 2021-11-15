@@ -17,7 +17,7 @@ import {
 } from 'app/shared/services';
 import { ServerMapData } from 'app/core/components/server-map/class/server-map-data.class';
 import { getMaxTickValue } from 'app/core/utils/chart-util';
-import { Actions } from 'app/shared/store';
+import { Actions } from 'app/shared/store/reducers';
 import { SourceType } from 'app/core/components/response-summary-chart/response-summary-chart-container.component';
 import { Layer } from 'app/core/components/response-summary-chart/response-summary-chart-container.component';
 import { filterObj } from 'app/core/utils/util';
@@ -210,9 +210,8 @@ export class ResponseAvgMaxChartContainerComponent implements OnInit, OnDestroy 
                 }),
                 map((target: any) => target.responseStatistics),
             ),
-            this.storeHelperService.getAgentSelectionForServerList(this.unsubscribe).pipe(
+            this.messageQueueService.receiveMessage(this.unsubscribe, MESSAGE_TO.AGENT_SELECT_FOR_SERVER_LIST).pipe(
                 filter(() => this.sourceType === SourceType.INFO_PER_SERVER),
-                filter((data: IAgentSelection) => !!data),
                 tap(({agent}: IAgentSelection) => this.selectedAgent = agent),
                 pluck('responseStatistics'),
             ),

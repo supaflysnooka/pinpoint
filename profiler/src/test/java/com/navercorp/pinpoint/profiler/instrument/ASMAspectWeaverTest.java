@@ -115,14 +115,14 @@ public class ASMAspectWeaverTest {
 
                         return super.defineClass(name, bytecode, 0, bytecode.length);
                     } catch (Exception ex) {
-                        throw new ClassNotFoundException("Load error: " + ex.toString(), ex);
+                        throw new ClassNotFoundException("Load error: " + ex, ex);
                     }
                 } else {
                     return super.loadClass(name);
                 }
             }
         };
-        Class clazz = classLoader.loadClass(originalName);
+        Class<?> clazz = classLoader.loadClass(originalName);
         return clazz.newInstance();
     }
 

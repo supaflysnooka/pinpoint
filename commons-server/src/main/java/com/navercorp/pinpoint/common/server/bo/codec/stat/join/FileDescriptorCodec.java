@@ -30,7 +30,6 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinLongFieldBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -47,7 +46,6 @@ public class FileDescriptorCodec implements ApplicationStatCodec {
 
     private final AgentStatDataPointCodec codec;
 
-    @Autowired
     public FileDescriptorCodec(AgentStatDataPointCodec codec) {
         this.codec = Objects.requireNonNull(codec, "agentStatDataPointCodec");
     }
@@ -65,7 +63,7 @@ public class FileDescriptorCodec implements ApplicationStatCodec {
 
         final int numValues = joinFileDescriptorBoList.size();
         valueBuffer.putVInt(numValues);
-        List<Long> timestamps = new ArrayList<Long>(numValues);
+        List<Long> timestamps = new ArrayList<>(numValues);
         JoinLongFieldStrategyAnalyzer.Builder openFileDescriptorCountAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
 
         for (JoinStatBo joinStatBo : joinFileDescriptorBoList) {
@@ -110,7 +108,7 @@ public class FileDescriptorCodec implements ApplicationStatCodec {
         // decode values
         final List<JoinLongFieldBo> openFileDescriptorCounts = this.codec.decodeValues(valueBuffer, openFileDescriptorCountEncodingStrategy, numValues);
 
-        List<JoinStatBo> joinFileDescriptorBoList = new ArrayList<JoinStatBo>(numValues);
+        List<JoinStatBo> joinFileDescriptorBoList = new ArrayList<>(numValues);
         for (int i = 0; i < numValues; i++) {
             JoinFileDescriptorBo joinFileDescriptorBo = new JoinFileDescriptorBo();
             joinFileDescriptorBo.setId(id);

@@ -30,6 +30,8 @@ import com.navercorp.pinpoint.bootstrap.plugin.request.ServerHeaderRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListener;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListenerBuilder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.util.ParameterRecorder;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListener;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListenerBuilder;
 import com.navercorp.pinpoint.plugin.common.servlet.util.ArgumentValidator;
 import com.navercorp.pinpoint.plugin.undertow.ParameterRecorderFactory;
 import com.navercorp.pinpoint.plugin.undertow.UndertowConfig;
@@ -50,6 +52,7 @@ public class ConnectorsExecuteRootHandlerInterceptor implements AroundIntercepto
     private final ArgumentValidator argumentValidator;
     private final UndertowHttpHeaderFilter httpHeaderFilter;
     private final ServletRequestListener<HttpServerExchange> servletRequestListener;
+    private final ServletResponseListener<HttpServerExchange> servletResponseListener;
 
     public ConnectorsExecuteRootHandlerInterceptor(TraceContext traceContext, MethodDescriptor descriptor, RequestRecorderFactory<HttpServerExchange> requestRecorderFactory) {
         this.methodDescriptor = descriptor;
@@ -58,17 +61,21 @@ public class ConnectorsExecuteRootHandlerInterceptor implements AroundIntercepto
         RequestAdaptor<HttpServerExchange> requestAdaptor = new HttpServerExchangeAdaptor();
         ParameterRecorder<HttpServerExchange> parameterRecorder = ParameterRecorderFactory.newParameterRecorderFactory(config.getExcludeProfileMethodFilter(), config.isTraceRequestParam());
 
-        ServletRequestListenerBuilder<HttpServerExchange> builder = new ServletRequestListenerBuilder<HttpServerExchange>(UndertowConstants.UNDERTOW, traceContext, requestAdaptor);
-        builder.setExcludeURLFilter(config.getExcludeUrlFilter());
-        builder.setParameterRecorder(parameterRecorder);
-        builder.setRequestRecorderFactory(requestRecorderFactory);
+        ServletRequestListenerBuilder<HttpServerExchange> reqBuilder = new ServletRequestListenerBuilder<>(UndertowConstants.UNDERTOW, traceContext, requestAdaptor);
+        reqBuilder.setExcludeURLFilter(config.getExcludeUrlFilter());
+        reqBuilder.setParameterRecorder(parameterRecorder);
+        reqBuilder.setRequestRecorderFactory(requestRecorderFactory);
 
         final ProfilerConfig profilerConfig = traceContext.getProfilerConfig();
-        builder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
-        builder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
-        builder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
-        builder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
-        this.servletRequestListener = builder.build();
+        reqBuilder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
+        reqBuilder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
+        reqBuilder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
+        reqBuilder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
+        reqBuilder.setRecordStatusCode(false);
+
+        this.servletRequestListener = reqBuilder.build();
+
+        this.servletResponseListener = new ServletResponseListenerBuilder<>(traceContext, new HttpServerExchangeResponseAdaptor()).build();
 
         this.httpHeaderFilter = new UndertowHttpHeaderFilter(config.isHidePinpointHeader());
     }
@@ -86,6 +93,7 @@ public class ConnectorsExecuteRootHandlerInterceptor implements AroundIntercepto
         try {
             final HttpServerExchange request = (HttpServerExchange) args[1];
             this.servletRequestListener.initialized(request, UndertowConstants.UNDERTOW_METHOD, this.methodDescriptor);
+            this.servletResponseListener.initialized(request, UndertowConstants.UNDERTOW_METHOD, this.methodDescriptor); //must after request listener due to trace block begin
             this.httpHeaderFilter.filter(request);
         } catch (Throwable t) {
             if (isInfo) {
@@ -107,6 +115,7 @@ public class ConnectorsExecuteRootHandlerInterceptor implements AroundIntercepto
         try {
             final HttpServerExchange request = (HttpServerExchange) args[1];
             final int statusCode = getStatusCode(request);
+            this.servletResponseListener.destroyed(request, throwable, statusCode); //must before request listener due to trace block ending
             // TODO Get exception. e.g. request.getAttachment(DefaultResponseListener.EXCEPTION)
             this.servletRequestListener.destroyed(request, throwable, statusCode);
         } catch (Throwable t) {

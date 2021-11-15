@@ -8,7 +8,9 @@
                                             com.navercorp.pinpoint.web.service,
                                             com.navercorp.pinpoint.web.mapper,
                                             com.navercorp.pinpoint.web.applicationmap,
-                                            com.navercorp.pinpoint.common.server.bo" />
+                                            com.navercorp.pinpoint.common.server.bo">
+        <context:exclude-filter type="regex" expression="com.navercorp.pinpoint.web.service.CacheServiceImpl"/>
+    </context:component-scan>
 
     <bean id="hbaseConfiguration" class="com.navercorp.pinpoint.common.hbase.HbaseConfigurationFactoryBean">
         <property name="properties">
@@ -25,6 +27,8 @@
                 <prop key="hbase.rpc.timeout">${hbase.rpc.timeout}</prop>
                 <!-- hbase default:Integer.MAX_VALUE -->
                 <prop key="hbase.client.operation.timeout">${hbase.client.operation.timeout}</prop>
+                <!-- # hbase default: 20m -->
+                <prop key="hbase.client.meta.operation.timeout">${hbase.client.meta.operation.timeout}</prop>
 
                 <!-- hbase socket read timeout. default: 200000-->
                 <prop key="hbase.ipc.client.socket.timeout.read">${hbase.ipc.client.socket.timeout.read}</prop>

@@ -28,12 +28,21 @@
     background-color: var(--background-default);
 }
 
+::ng-deep #call-tree-table .ag-row-exception {
+    background-color: var(--background-row-danger);
+}
+
 ::ng-deep #call-tree-table .ag-body {
     background-color: var(--background-default);
 }
 
 ::ng-deep #call-tree-table .ag-header-cell {
-    color: var(--text-primary)  !important;
+    color: var(--text-primary) !important;
     background-color: var(--background-default);
     font-weight: bold;
+}
+
+::ng-deep .ag-cell-wrapper.ag-row-group[class*="ag-row-group-indent"],
+::ng-deep .ag-cell-wrapper.ag-row-group-leaf-indent[class*="ag-row-group-indent"] {
+    padding-left: 0;
 }

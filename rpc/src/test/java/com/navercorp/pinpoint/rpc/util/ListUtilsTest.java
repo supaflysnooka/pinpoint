@@ -24,24 +24,24 @@ public class ListUtilsTest {
 
     @Test
     public void testAddIfValueNotNull() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
 
         Assert.assertTrue(ListUtils.addIfValueNotNull(strings, "foo"));
-        Assert.assertTrue(strings.get(0).equals("foo"));
+        Assert.assertEquals("foo", strings.get(0));
 
         Assert.assertFalse(ListUtils.addIfValueNotNull(strings, null));
     }
 
     @Test
     public void testAddAllIfAllValuesNotNull() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
 
         Assert.assertTrue(
                 ListUtils.addAllIfAllValuesNotNull(
                         strings, new String[]{"a", "b", "c"}));
-        Assert.assertTrue(strings.get(0).equals("a"));
-        Assert.assertTrue(strings.get(1).equals("b"));
-        Assert.assertTrue(strings.get(2).equals("c"));
+        Assert.assertEquals("a", strings.get(0));
+        Assert.assertEquals("b", strings.get(1));
+        Assert.assertEquals("c", strings.get(2));
 
         Assert.assertFalse(ListUtils.addAllIfAllValuesNotNull(strings, null));
         Assert.assertFalse(ListUtils
@@ -50,7 +50,7 @@ public class ListUtilsTest {
 
     @Test
     public void testGetFirst() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
 
         Assert.assertNull(ListUtils.getFirst(null));
         Assert.assertNull(ListUtils.getFirst(strings));
@@ -68,7 +68,7 @@ public class ListUtilsTest {
 
     @Test
     public void testIsFirst() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
         strings.add("foo");
         strings.add("bar");
         strings.add("baz");
@@ -81,7 +81,7 @@ public class ListUtilsTest {
 
     @Test
     public void testGet() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
         strings.add("foo");
         strings.add("bar");
         strings.add("baz");
@@ -93,7 +93,7 @@ public class ListUtilsTest {
 
     @Test
     public void testGetLast() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
 
         Assert.assertNull(ListUtils.getLast(null));
         Assert.assertNull(ListUtils.getLast(strings));
@@ -111,7 +111,7 @@ public class ListUtilsTest {
 
     @Test
     public void testIsLast() {
-        ArrayList<String> strings = new ArrayList<String>();
+        ArrayList<String> strings = new ArrayList<>();
         strings.add("foo");
         strings.add("bar");
         strings.add("baz");

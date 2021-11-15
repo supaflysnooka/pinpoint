@@ -41,16 +41,16 @@ public class ZookeeperProfilerClusterManager implements ProfilerClusterManager {
 
     private final CommonStateContext workerState = new CommonStateContext();
 
-    private final ClusterPointRepository profileCluster;
+    private final ClusterPointRepository<ClusterPoint<?>> profileCluster;
 
     private final Object lock = new Object();
 
     // keep it simple - register on RUN, remove on FINISHED, skip otherwise
     // should only be instantiated when cluster is enabled.
-    public ZookeeperProfilerClusterManager(ZookeeperClient client, String serverIdentifier, ClusterPointRepository profileCluster) {
+    public ZookeeperProfilerClusterManager(ZookeeperClient client, String connectedAgentZNodePath, ClusterPointRepository<ClusterPoint<?>> profileCluster) {
         this.profileCluster = Objects.requireNonNull(profileCluster, "profileCluster");
 
-        this.worker = new ZookeeperJobWorker(client, serverIdentifier);
+        this.worker = new ZookeeperJobWorker(client, connectedAgentZNodePath);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class ZookeeperProfilerClusterManager implements ProfilerClusterManager {
     }
 
     @Override
-    public void register(ClusterPoint targetClusterPoint) {
+    public void register(ClusterPoint<?> targetClusterPoint) {
         if (workerState.isStarted()) {
             synchronized (lock) {
                 String key = targetClusterPoint.getDestAgentInfo().getAgentKey();
@@ -119,7 +119,7 @@ public class ZookeeperProfilerClusterManager implements ProfilerClusterManager {
     }
 
     @Override
-    public void unregister(ClusterPoint targetClusterPoint) {
+    public void unregister(ClusterPoint<?> targetClusterPoint) {
         if (workerState.isStarted()) {
             synchronized (lock) {
                 String key = targetClusterPoint.getDestAgentInfo().getAgentKey();

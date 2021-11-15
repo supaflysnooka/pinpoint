@@ -15,18 +15,16 @@
  */
 package com.navercorp.pinpoint.web.dao.memory;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import com.navercorp.pinpoint.web.alarm.vo.CheckerResult;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.dao.AlarmDao;
 import com.navercorp.pinpoint.web.dao.UserGroupDao;
@@ -42,9 +40,12 @@ public class MemoryAlarmDao implements AlarmDao {
     private final Map<String, Rule> alarmRule = new ConcurrentHashMap<>();
     private final AtomicInteger ruleIdGenerator  = new AtomicInteger(); 
     
-    @Autowired
-    UserGroupDao userGroupDao;
-    
+    private final UserGroupDao userGroupDao;
+
+    public MemoryAlarmDao(UserGroupDao userGroupDao) {
+        this.userGroupDao = Objects.requireNonNull(userGroupDao, "userGroupDao");
+    }
+
     @Override
     public String insertRule(Rule rule) {
         String ruleId = String.valueOf(ruleIdGenerator.getAndIncrement());
@@ -54,6 +55,7 @@ public class MemoryAlarmDao implements AlarmDao {
     }
     
     @Override
+    @Deprecated
     public String insertRuleExceptWebhookSend(Rule rule) {
         String ruleId = String.valueOf(ruleIdGenerator.getAndIncrement());
         rule.setRuleId(ruleId);
@@ -107,6 +109,7 @@ public class MemoryAlarmDao implements AlarmDao {
     }
     
     @Override
+    @Deprecated
     public void updateRuleExceptWebhookSend(Rule rule) {
         alarmRule.put(rule.getRuleId(), rule);
     }
@@ -130,17 +133,10 @@ public class MemoryAlarmDao implements AlarmDao {
         }
     }
 
-    @Override
-    public List<CheckerResult> selectBeforeCheckerResultList(String applicationId) {
-        return new ArrayList<>();
-    }
 
     @Override
     public void deleteCheckerResult(String ruleId) {
     }
 
-    @Override
-    public void insertCheckerResult(CheckerResult checkerResult) {
-    }
 
 }

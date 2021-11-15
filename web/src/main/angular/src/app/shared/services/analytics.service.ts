@@ -139,7 +139,12 @@ export enum TRACKED_EVENT_LIST {
     SWITCH_TRANSACTION_VIEW_TYPE_THROUGH_TAB = 'Switch Transaction View Type through Tab',
     OPEN_LOG_PAGE_THROUGH_TAB = 'Open Log Page through Tab',
     MOVE_NODE_IN_SERVER_MAP = 'Move Node in Server Map',
-    CHANGE_THEME = 'Change Theme'
+    CHANGE_THEME = 'Change Theme',
+    SET_EXPERIMENTAL_OPTION = 'Set Experimental Option',
+    SET_REAL_TIME_AREA_HEIGHT = 'Set RealTime Area Height',
+    SELECT_APPLICATION_FOR_WEBHOOK = 'Select Application For Webhook',
+    SHOW_WEBHOOK_UPDATE_POPUP = 'Show Webhook Update Popup',
+
 }
 
 @Injectable()

@@ -33,7 +33,6 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.JoinTransactionBo;
 import com.navercorp.pinpoint.common.util.CollectionUtils;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -49,7 +48,6 @@ public class TransactionCodec implements ApplicationStatCodec {
 
     private final AgentStatDataPointCodec codec;
 
-    @Autowired
     public TransactionCodec(AgentStatDataPointCodec codec) {
         this.codec = Objects.requireNonNull(codec, "agentStatDataPointCodec");
     }
@@ -62,7 +60,7 @@ public class TransactionCodec implements ApplicationStatCodec {
 
         final int numValues = joinTransactionBoList.size();
         valueBuffer.putVInt(numValues);
-        List<Long> timestamps = new ArrayList<Long>(numValues);
+        List<Long> timestamps = new ArrayList<>(numValues);
         UnsignedLongEncodingStrategy.Analyzer.Builder collectIntervalAnalyzerBuilder = new UnsignedLongEncodingStrategy.Analyzer.Builder();
         JoinLongFieldStrategyAnalyzer.Builder totalCountAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
 
@@ -113,7 +111,7 @@ public class TransactionCodec implements ApplicationStatCodec {
         List<Long> collectIntervalList = this.codec.decodeValues(valueBuffer, collectIntervalEncodingStrategy, numValues);
         final List<JoinLongFieldBo> totalCountList = this.codec.decodeValues(valueBuffer, totalCountEncodingStrategy, numValues);
 
-        List<JoinStatBo> joinTransactionBoList = new ArrayList<JoinStatBo>();
+        List<JoinStatBo> joinTransactionBoList = new ArrayList<>();
         for (int i = 0 ; i < numValues ; i++) {
             JoinTransactionBo joinTransactionBo = new JoinTransactionBo();
             joinTransactionBo.setId(id);

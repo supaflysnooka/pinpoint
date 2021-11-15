@@ -22,6 +22,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -43,15 +44,11 @@ class ParallelClassLoader extends URLClassLoader {
 
     public ParallelClassLoader(String name, URL[] urls, ClassLoader parent, List<String> libClass) {
         super(urls, parent);
-        if (name == null) {
-            throw new NullPointerException("name");
-        }
-        this.name = name;
+        this.name = Objects.requireNonNull(name, "name");
 
-        if (libClass == null) {
-            throw new NullPointerException("libClass");
-        }
         this.parent = parent;
+
+        Objects.requireNonNull(libClass, "libClass");
         this.libClass = new ProfilerLibClass(libClass);
     }
 
@@ -85,14 +82,14 @@ class ParallelClassLoader extends URLClassLoader {
             parentResource = this.bootLoader.findResources(name);
         }
 
-        return new MergedEnumeration2<URL>(currentResource, parentResource);
+        return new MergedEnumeration2<>(currentResource, parentResource);
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         synchronized (getClassLoadingLock0(name)) {
             // First, check if the class has already been loaded
-            Class clazz = findLoadedClass(name);
+            Class<?> clazz = findLoadedClass(name);
             if (clazz == null) {
                 if (onLoadClass(name)) {
                     // load a class used for Pinpoint itself by this ClassLoader

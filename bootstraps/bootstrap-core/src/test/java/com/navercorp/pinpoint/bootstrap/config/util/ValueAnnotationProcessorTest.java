@@ -9,7 +9,7 @@ import java.util.Properties;
 public class ValueAnnotationProcessorTest {
 
     @Test
-    public void primitive() throws Exception {
+    public void primitive() {
         PrimitiveConfig config = new PrimitiveConfig();
         Properties properties = new Properties();
 
@@ -163,6 +163,30 @@ public class ValueAnnotationProcessorTest {
         public void setA(String a) {
             this.a = a;
         }
+    }
+
+    public static class DefaultValueConfig {
+        @Value("${int:-1}")
+        private int intValue;
+
+        @Value("${long:-2}")
+        private long longValue;
+    }
+
+    @Test
+    public void defaultValue() {
+        DefaultValueConfig config = new DefaultValueConfig();
+        Properties properties = new Properties();
+//        properties.put("int", "");
+//        properties.put("long", "");
+
+
+        ValueAnnotationProcessor reader = new ValueAnnotationProcessor();
+        reader.process(config, properties);
+
+        Assert.assertEquals(-1, config.intValue);
+        Assert.assertEquals(-2, config.longValue);
+
     }
 
 }

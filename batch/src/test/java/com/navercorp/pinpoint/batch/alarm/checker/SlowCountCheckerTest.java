@@ -16,10 +16,9 @@
 
 package com.navercorp.pinpoint.batch.alarm.checker;
 
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.batch.alarm.CheckerCategory;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory.DataCollectorCategory;
-import com.navercorp.pinpoint.batch.alarm.checker.SlowCountChecker;
+import com.navercorp.pinpoint.web.alarm.CheckerCategory;
 import com.navercorp.pinpoint.batch.alarm.collector.ResponseTimeDataCollector;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.applicationmap.histogram.TimeHistogram;
@@ -49,7 +48,7 @@ public class SlowCountCheckerTest {
             
             @Override
             public List<ResponseTime> selectResponseTime(Application application, Range range) {
-                List<ResponseTime> list = new LinkedList<ResponseTime>();
+                List<ResponseTime> list = new LinkedList<>();
                 long timeStamp = 1409814914298L;
                 ResponseTime responseTime = new ResponseTime(SERVICE_NAME, ServiceType.STAND_ALONE, timeStamp);
                 list.add(responseTime);

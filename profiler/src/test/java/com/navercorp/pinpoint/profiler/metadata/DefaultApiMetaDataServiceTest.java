@@ -30,8 +30,8 @@ import static org.mockito.Mockito.*;
 public class DefaultApiMetaDataServiceTest {
 
     @Test
-    public void cacheApi() throws Exception {
-        EnhancedDataSender<Object> dataSender = mock(EnhancedDataSender.class);
+    public void cacheApi() {
+        EnhancedDataSender<MetaDataType> dataSender = mock(EnhancedDataSender.class);
         SimpleCache<String> cache = new SimpleCache<String>(new SimpleCache.ZigZagTransformer());
         ApiMetaDataService apiMetaDataService = new DefaultApiMetaDataService(dataSender, cache);
 

@@ -20,10 +20,8 @@ import com.navercorp.pinpoint.common.hbase.TableNameProvider;
 import com.navercorp.pinpoint.common.server.bo.serializer.agent.AgentIdRowKeyEncoder;
 import com.navercorp.pinpoint.web.mapper.AgentInfoMapper;
 import com.navercorp.pinpoint.web.vo.AgentInfo;
-
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -54,7 +52,7 @@ public class ApplicationCache {
         this.tableNameProvider = Objects.requireNonNull(tableNameProvider, "tableNameProvider");
     }
 
-    @Cacheable(value="applicationId", key=SPEL_KEY)
+    @Cacheable(cacheNames = "applicationId", key = SPEL_KEY, cacheManager = "applicationId")
     public String findApplicationId(ApplicationKey application) {
         final String agentId = application.getAgentId();
         final long agentStartTimestamp = application.getAgentStartTime();
@@ -121,9 +119,9 @@ public class ApplicationCache {
         @Override
         public String toString() {
             return "ApplicationKey{" +
-                "agentId='" + agentId + '\'' +
-                ", agentStartTime=" + agentStartTime +
-                '}';
+                    "agentId='" + agentId + '\'' +
+                    ", agentStartTime=" + agentStartTime +
+                    '}';
         }
     }
 }

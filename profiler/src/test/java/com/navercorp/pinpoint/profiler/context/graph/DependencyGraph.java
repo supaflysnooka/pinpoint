@@ -84,8 +84,8 @@ public class DependencyGraph {
 
         Instrumentation instrumentation = mock(Instrumentation.class);
         AgentOption agentOption = new DefaultAgentOption(instrumentation,
-                "mockAgentId", "mockAgentName", "mockApplicationName", false, profilerConfig, Collections.<String>emptyList(),
-                null);
+                "mockAgentId", "mockAgentName", "mockApplicationName", false,
+                profilerConfig, Collections.<String>emptyList(), Collections.<String>emptyList());
 
         InterceptorRegistryBinder interceptorRegistryBinder = new TestInterceptorRegistryBinder();
         Module testInterceptorRegistryModule = InterceptorRegistryModule.wrap(interceptorRegistryBinder);
@@ -101,9 +101,9 @@ public class DependencyGraph {
         return dir;
     }
 
-    public class Grapher {
+    public static class Grapher {
         public void graph(String filename, Injector demoInjector) throws IOException {
-            PrintWriter out = new PrintWriter(new File(filename), StandardCharsets.UTF_8.name());
+            PrintWriter out = new PrintWriter(filename, StandardCharsets.UTF_8.name());
 
             Injector injector = Guice.createInjector(new GraphvizModule());
             GraphvizGrapher grapher = injector.getInstance(GraphvizGrapher.class);

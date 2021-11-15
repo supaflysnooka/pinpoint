@@ -32,9 +32,6 @@ public class ConsumerConstructorInterceptor implements AroundInterceptor {
     private final PLogger logger = PLoggerFactory.getLogger(this.getClass());
     private final boolean isDebug = logger.isDebugEnabled();
 
-    public ConsumerConstructorInterceptor() {
-    }
-
     @Override
     public void before(Object target, Object[] args) {
         if (isDebug) {
@@ -79,7 +76,7 @@ public class ConsumerConstructorInterceptor implements AroundInterceptor {
     }
 
     private String getRemoteAddress(ConsumerConfig consumerConfig) {
-        List<String> serverList = consumerConfig.getList("bootstrap.servers");
+        List<String> serverList = consumerConfig.getList(KafkaConstants.CONFIG_BOOTSTRAP_SERVERS_KEY);
         String remoteAddress = KafkaConstants.UNKNOWN;
         if (CollectionUtils.nullSafeSize(serverList) == 1) {
             remoteAddress = serverList.get(0);

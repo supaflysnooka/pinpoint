@@ -23,7 +23,7 @@ import com.navercorp.pinpoint.collector.dao.hbase.statistics.CalleeColumnName;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.ColumnName;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.MapLinkConfiguration;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.RowKey;
-import com.navercorp.pinpoint.common.profiler.util.ApplicationMapStatisticsUtils;
+import com.navercorp.pinpoint.common.server.util.ApplicationMapStatisticsUtils;
 import com.navercorp.pinpoint.common.server.util.AcceptedTimeService;
 import com.navercorp.pinpoint.common.server.util.TimeSlot;
 import com.navercorp.pinpoint.common.trace.HistogramSchema;
@@ -31,7 +31,6 @@ import com.navercorp.pinpoint.common.trace.ServiceType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
@@ -55,8 +54,6 @@ public class HbaseMapStatisticsCallerDao implements MapStatisticsCallerDao {
     private final BulkWriter bulkWriter;
     private final MapLinkConfiguration mapLinkConfiguration;
 
-
-    @Autowired
     public HbaseMapStatisticsCallerDao(MapLinkConfiguration mapLinkConfiguration,
                                        AcceptedTimeService acceptedTimeService,
                                        TimeSlot timeSlot,

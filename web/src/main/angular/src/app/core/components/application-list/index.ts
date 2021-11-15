@@ -9,9 +9,12 @@ import { ApplicationListForConfigurationContainerComponent } from './application
 import { ApplicationListForConfigurationComponent } from './application-list-for-configuration.component';
 import { FavoriteApplicationListForConfigurationContainerComponent } from './favorite-application-list-for-configuration-container.component';
 import { ApplicationListForConfigurationAlarmContainerComponent } from './application-list-for-configuration-alarm-container.component';
+import { ApplicationListForConfigurationWebhookContainerComponent } from './application-list-for-configuration-webhook-container.component';
 import { ApplicationListInteractionForConfigurationService } from './application-list-interaction-for-configuration.service';
 import { ApplicationListForAgentManagementContainerComponent } from './application-list-for-agent-management-container.component';
 import { ServerErrorPopupModule } from 'app/core/components/server-error-popup';
+import { ApplicationListDataService } from './application-list-data.service';
+import { FavoriteApplicationListDataService } from './favorite-application-list-data.service';
 
 @NgModule({
     declarations: [
@@ -21,6 +24,7 @@ import { ServerErrorPopupModule } from 'app/core/components/server-error-popup';
         ApplicationListForConfigurationComponent,
         FavoriteApplicationListForConfigurationContainerComponent,
         ApplicationListForConfigurationAlarmContainerComponent,
+        ApplicationListForConfigurationWebhookContainerComponent,
         ApplicationListForAgentManagementContainerComponent
     ],
     imports: [
@@ -33,10 +37,13 @@ import { ServerErrorPopupModule } from 'app/core/components/server-error-popup';
         ApplicationListForConfigurationContainerComponent,
         FavoriteApplicationListForConfigurationContainerComponent,
         ApplicationListForConfigurationAlarmContainerComponent,
+        ApplicationListForConfigurationWebhookContainerComponent,
         ApplicationListForAgentManagementContainerComponent
     ],
     providers: [
         ApplicationListInteractionForConfigurationService,
+        ApplicationListDataService,
+        FavoriteApplicationListDataService
     ]
 })
 export class ApplicationListModule { }

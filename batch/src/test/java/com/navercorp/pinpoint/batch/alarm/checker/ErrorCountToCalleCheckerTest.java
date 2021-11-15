@@ -16,10 +16,10 @@
 
 package com.navercorp.pinpoint.batch.alarm.checker;
 
-import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.batch.alarm.CheckerCategory;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory.DataCollectorCategory;
+import com.navercorp.pinpoint.web.alarm.CheckerCategory;
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
 import com.navercorp.pinpoint.batch.alarm.collector.MapStatisticsCallerDataCollector;
+import com.navercorp.pinpoint.common.trace.ServiceType;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.applicationmap.histogram.TimeHistogram;
 import com.navercorp.pinpoint.web.applicationmap.rawdata.LinkCallDataMap;
@@ -60,7 +60,7 @@ public class ErrorCountToCalleCheckerTest {
                 for (int i = 1 ; i < 6  ; i++) {
                     LinkCallDataMap linkCallDataMap = new LinkCallDataMap();
                     Application toApplication = new Application(TO_SERVICE_NAME + i, ServiceType.STAND_ALONE);
-                    Collection<TimeHistogram> timeHistogramList = new ArrayList<TimeHistogram>();
+                    Collection<TimeHistogram> timeHistogramList = new ArrayList<>();
                     
                     for (int j = 1 ; j < 11  ; j++) {
                         TimeHistogram timeHistogram = new TimeHistogram(ServiceType.STAND_ALONE, timeStamp);

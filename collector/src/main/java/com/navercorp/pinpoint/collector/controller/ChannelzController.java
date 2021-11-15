@@ -7,10 +7,9 @@ import com.navercorp.pinpoint.grpc.channelz.ChannelzRegistry;
 import com.navercorp.pinpoint.grpc.channelz.ChannelzUtils;
 import io.grpc.InternalChannelz;
 import io.grpc.InternalInstrumented;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 
-@Controller
+@RestController
 @RequestMapping("/channelz")
 public class ChannelzController {
 
@@ -26,22 +25,19 @@ public class ChannelzController {
     private final InternalChannelz channelz = InternalChannelz.instance();
     private final ObjectMapper mapper;
 
-    @Autowired
     public ChannelzController(ChannelzRegistry channelzRegistry, ObjectMapper objectMapper) {
         this.channelzRegistry = Objects.requireNonNull(channelzRegistry, "channelzRegistry");
         this.mapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
-    @RequestMapping("/getSocket")
-    @ResponseBody
+    @GetMapping("/getSocket")
     public String getSocket(long logId) throws JsonProcessingException {
         InternalChannelz.SocketStats stats = getSocket0(logId);
 
         return mapper.writeValueAsString(stats);
     }
 
-    @RequestMapping("/html/getSocket")
-    @ResponseBody
+    @GetMapping("/html/getSocket")
     public String getSocketToHtml(long logId) {
         InternalChannelz.SocketStats stats = getSocket0(logId);
 
@@ -56,8 +52,7 @@ public class ChannelzController {
         return ChannelzUtils.getResult("Socket", socket);
     }
 
-    @RequestMapping("/findSocket")
-    @ResponseBody
+    @GetMapping("/findSocket")
     public String findSocket(String remoteAddress, int localPort) throws JsonProcessingException {
 
         ChannelzRegistry.AddressId addressId = ChannelzRegistry.AddressId.newAddressId(remoteAddress, localPort);
@@ -69,8 +64,7 @@ public class ChannelzController {
         return mapper.writeValueAsString(stats);
     }
 
-    @RequestMapping("/html/findSocket")
-    @ResponseBody
+    @GetMapping("/html/findSocket")
     public String findSocketStatToHtml(String remoteAddress, int localPort) {
 
         ChannelzRegistry.AddressId targetAddress = ChannelzRegistry.AddressId.newAddressId(remoteAddress, localPort);
@@ -97,8 +91,7 @@ public class ChannelzController {
         return ChannelzUtils.getResults("Socket", result);
     }
 
-    @RequestMapping("/html/getServer")
-    @ResponseBody
+    @GetMapping("/html/getServer")
     public String getServerStatToHtml(String serverName) {
         List<InternalChannelz.ServerStats> stats = getServer(serverName);
         if (stats == null) {
@@ -118,8 +111,7 @@ public class ChannelzController {
     }
 
 
-    @RequestMapping("/html/getSpanReceiver")
-    @ResponseBody
+    @GetMapping("/html/getSpanReceiver")
     public String getSpanReceiverl() {
         return getServerStatToHtml(GrpcReceiverNames.SPAN);
     }

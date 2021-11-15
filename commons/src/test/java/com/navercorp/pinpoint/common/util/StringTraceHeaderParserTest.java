@@ -21,8 +21,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.navercorp.pinpoint.common.util.StringTraceHeaderParser;
-import com.navercorp.pinpoint.common.util.TraceHeader;
 
 import java.util.UUID;
 
@@ -52,7 +50,7 @@ public class StringTraceHeaderParserTest {
 
 
     private void createAndParser(String uuid, int spanId, int pSpanId, int sampling, short flag) {
-        String traceHeader = parser.createHeader(uuid, spanId, pSpanId, sampling, (short) flag);
+        String traceHeader = parser.createHeader(uuid, spanId, pSpanId, sampling, flag);
 
         TraceHeader header = parser.parseHeader(traceHeader);
         Assert.assertEquals("id", uuid, header.getId());
@@ -60,6 +58,6 @@ public class StringTraceHeaderParserTest {
         Assert.assertEquals("pSpanId", String.valueOf(pSpanId), header.getParentSpanId());
         Assert.assertEquals("sampling", String.valueOf(sampling), header.getSampling());
         Assert.assertEquals("flag", String.valueOf(flag), header.getFlag());
-        logger.debug("{}, parse:" + header);
+        logger.debug("parse:{}", header);
     }
 }

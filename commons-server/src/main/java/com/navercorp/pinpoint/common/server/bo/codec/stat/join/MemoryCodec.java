@@ -30,7 +30,6 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinMemoryBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -46,7 +45,6 @@ public class MemoryCodec implements ApplicationStatCodec {
 
     private final AgentStatDataPointCodec codec;
 
-    @Autowired
     public MemoryCodec(AgentStatDataPointCodec codec) {
         this.codec = Objects.requireNonNull(codec, "agentStatDataPointCodec");
     }
@@ -63,7 +61,7 @@ public class MemoryCodec implements ApplicationStatCodec {
 
         final int numValues = joinMemoryBoList.size();
         valueBuffer.putVInt(numValues);
-        List<Long> timestamps = new ArrayList<Long>(numValues);
+        List<Long> timestamps = new ArrayList<>(numValues);
         JoinLongFieldStrategyAnalyzer.Builder heapUsedAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
         JoinLongFieldStrategyAnalyzer.Builder nonHeapUsedAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
 
@@ -119,7 +117,7 @@ public class MemoryCodec implements ApplicationStatCodec {
         final List<JoinLongFieldBo> heapUsedList = this.codec.decodeValues(valueBuffer, heapUsedEncodingStrategy, numValues);
         final List<JoinLongFieldBo> nonHeapUsedList = this.codec.decodeValues(valueBuffer, nonHeapUsedEncodingStrategy, numValues);
 
-        List<JoinStatBo> joinMemoryBoList = new ArrayList<JoinStatBo>(numValues);
+        List<JoinStatBo> joinMemoryBoList = new ArrayList<>(numValues);
         for (int i = 0; i < numValues; i++) {
             JoinMemoryBo joinMemoryBo = new JoinMemoryBo();
             joinMemoryBo.setId(id);

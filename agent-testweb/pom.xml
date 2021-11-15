@@ -21,7 +21,7 @@
     <parent>
         <groupId>com.navercorp.pinpoint</groupId>
         <artifactId>pinpoint</artifactId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>pinpoint-agent-testweb</artifactId>
@@ -48,6 +48,7 @@
             -Dprofiler.sampling.rate=${pinpoint.agent.sampling-rate}
         </pinpoint.agent.default.jvmargument>
         <pinpoint.agent.jvmargument>${pinpoint.agent.default.jvmargument}</pinpoint.agent.jvmargument>
+        <pinpoint.server.port>18080</pinpoint.server.port>
     </properties>
 
     <modules>
@@ -57,6 +58,10 @@
         <module>reactor-netty-plugin-testweb</module>
         <module>rocketmq-plugin-testweb</module>
         <module>dubbo-plugin-testweb</module>
+<!--        <module>spring-cloud-gateway-plugin-testweb</module>-->
+<!--        <module>spring-webflux-plugin-testweb</module>-->
+        <module>jdk-http-plugin-testweb</module>
+        <module>vertx-3-plugin-testweb</module>
     </modules>
 
 
@@ -129,7 +134,7 @@
                     <jvmArguments>${pinpoint.agent.jvmargument}</jvmArguments>
                     <agents>${maven.multiModuleProjectDirectory}/agent/target/pinpoint-agent-${project.version}/pinpoint-bootstrap.jar</agents>
                     <commandlineArguments>
-                        --server.port=18080
+                        --server.port=${pinpoint.server.port}
                         --logging.level.root=info
                         --springdoc.swagger-ui.path=/
                     </commandlineArguments>

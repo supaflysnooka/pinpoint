@@ -16,12 +16,10 @@
 
 package com.navercorp.pinpoint.profiler.instrument.transformer;
 
-import com.navercorp.pinpoint.bootstrap.config.InstrumentMatcherCacheConfig;
-import com.navercorp.pinpoint.bootstrap.instrument.matcher.Matchable;
+import com.navercorp.pinpoint.profiler.instrument.config.DefaultInstrumentMatcherCacheConfig;
 import com.navercorp.pinpoint.bootstrap.instrument.matcher.Matcher;
 import com.navercorp.pinpoint.bootstrap.instrument.matcher.Matchers;
 import com.navercorp.pinpoint.bootstrap.instrument.matcher.operand.MatcherOperand;
-import com.navercorp.pinpoint.common.util.ClassLoaderUtils;
 import com.navercorp.pinpoint.profiler.plugin.Foo;
 import com.navercorp.pinpoint.profiler.plugin.MatchableClassFileTransformer;
 import com.navercorp.pinpoint.profiler.sender.Bar;
@@ -34,8 +32,6 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 public class MatchableTransformerRegistryTest {
 
     @Test
-    public void findTransformer() throws Exception {
+    public void findTransformer() {
         List<MatchableClassFileTransformer> matchableClassFileTransformerList = new ArrayList<>();
         MockMatchableClassFileTransformer mock1 = new MockMatchableClassFileTransformer(Matchers.newPackageBasedMatcher("com.navercorp.pinpoint.profiler.plugin"));
         MockMatchableClassFileTransformer mock2 = new MockMatchableClassFileTransformer(Matchers.newPackageBasedMatcher("com.navercorp.pinpoint.profiler.sender"));
@@ -57,7 +53,7 @@ public class MatchableTransformerRegistryTest {
         matchableClassFileTransformerList.add(mock1);
         matchableClassFileTransformerList.add(mock2);
 
-        MatchableTransformerRegistry registry = new MatchableTransformerRegistry(new InstrumentMatcherCacheConfig(), matchableClassFileTransformerList);
+        MatchableTransformerRegistry registry = new MatchableTransformerRegistry(new DefaultInstrumentMatcherCacheConfig(), matchableClassFileTransformerList);
 
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Class<?> clazz = Foo.class;
@@ -75,7 +71,7 @@ public class MatchableTransformerRegistryTest {
     @Test
     public void packageNameBasedIndex() {
         // sorted
-        TreeMap<String, String> packageNameBasedIndex = new TreeMap<String, String>(new Comparator<String>() {
+        TreeMap<String, String> packageNameBasedIndex = new TreeMap<>(new Comparator<String>() {
             @Override
             public int compare(String key1, String key2) {
                 return key1.compareTo(key2);
@@ -112,7 +108,7 @@ public class MatchableTransformerRegistryTest {
         value.accumulatorTime(startTime);
     }
 
-    class IndexValue {
+    static class IndexValue {
         final MatcherOperand operand;
         final ClassFileTransformer transformer;
         final AtomicLong accumulatorTimeMillis = new AtomicLong(0);
@@ -128,7 +124,7 @@ public class MatchableTransformerRegistryTest {
         }
     }
 
-    private class MockMatchableClassFileTransformer implements MatchableClassFileTransformer {
+    private static class MockMatchableClassFileTransformer implements MatchableClassFileTransformer {
         public Matcher matcher;
 
         public MockMatchableClassFileTransformer(Matcher matcher) {

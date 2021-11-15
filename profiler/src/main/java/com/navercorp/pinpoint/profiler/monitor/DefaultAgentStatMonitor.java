@@ -16,17 +16,19 @@
 
 package com.navercorp.pinpoint.profiler.monitor;
 
-import com.navercorp.pinpoint.bootstrap.config.DefaultProfilerConfig;
-import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.common.profiler.concurrent.PinpointThreadFactory;
+import com.navercorp.pinpoint.grpc.ExecutorUtils;
 import com.navercorp.pinpoint.profiler.context.module.AgentId;
 import com.navercorp.pinpoint.profiler.context.module.AgentStartTime;
 import com.navercorp.pinpoint.profiler.context.module.StatDataSender;
+import com.navercorp.pinpoint.profiler.context.monitor.config.DefaultMonitorConfig;
+import com.navercorp.pinpoint.profiler.context.monitor.config.MonitorConfig;
 import com.navercorp.pinpoint.profiler.context.monitor.metric.CustomMetricRegistryService;
 import com.navercorp.pinpoint.profiler.context.storage.UriStatStorage;
 import com.navercorp.pinpoint.profiler.monitor.collector.AgentCustomMetricCollector;
 import com.navercorp.pinpoint.profiler.monitor.collector.AgentStatMetricCollector;
 import com.navercorp.pinpoint.profiler.monitor.metric.AgentStatMetricSnapshot;
+import com.navercorp.pinpoint.profiler.monitor.metric.MetricType;
 import com.navercorp.pinpoint.profiler.sender.DataSender;
 import com.navercorp.pinpoint.profiler.sender.EmptyDataSender;
 
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -51,8 +54,8 @@ public class DefaultAgentStatMonitor implements AgentStatMonitor {
 
     private static final long MIN_COLLECTION_INTERVAL_MS = 1000;
     private static final long MAX_COLLECTION_INTERVAL_MS = 1000 * 5;
-    private static final long DEFAULT_COLLECTION_INTERVAL_MS = DefaultProfilerConfig.DEFAULT_AGENT_STAT_COLLECTION_INTERVAL_MS;
-    private static final int DEFAULT_NUM_COLLECTIONS_PER_SEND = DefaultProfilerConfig.DEFAULT_NUM_AGENT_STAT_BATCH_SEND;
+    private static final long DEFAULT_COLLECTION_INTERVAL_MS = DefaultMonitorConfig.DEFAULT_AGENT_STAT_COLLECTION_INTERVAL_MS;
+    private static final int DEFAULT_NUM_COLLECTIONS_PER_SEND = DefaultMonitorConfig.DEFAULT_NUM_AGENT_STAT_BATCH_SEND;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final long collectionIntervalMs;
@@ -62,24 +65,20 @@ public class DefaultAgentStatMonitor implements AgentStatMonitor {
     private final StatMonitorJob statMonitorJob;
 
     @Inject
-    public DefaultAgentStatMonitor(@StatDataSender DataSender dataSender,
-                                   @AgentId String agentId, @AgentStartTime long agentStartTimestamp,
+    public DefaultAgentStatMonitor(@StatDataSender DataSender<MetricType> dataSender,
+                                   @AgentId String agentId,
+                                   @AgentStartTime long agentStartTimestamp,
                                    @Named("AgentStatCollector") AgentStatMetricCollector<AgentStatMetricSnapshot> agentStatCollector,
                                    CustomMetricRegistryService customMetricRegistryService,
                                    UriStatStorage uriStatStorage,
-                                   ProfilerConfig profilerConfig) {
-        if (dataSender == null) {
-            throw new NullPointerException("dataSender");
-        }
-        if (agentId == null) {
-            throw new NullPointerException("agentId");
-        }
-        if (agentStatCollector == null) {
-            throw new NullPointerException("agentStatCollector");
-        }
+                                   MonitorConfig monitorConfig) {
+        Objects.requireNonNull(dataSender, "dataSender");
+        Objects.requireNonNull(agentId, "agentId");
+        Objects.requireNonNull(agentStatCollector, "agentStatCollector");
 
-        long collectionIntervalMs = profilerConfig.getProfileJvmStatCollectIntervalMs();
-        int numCollectionsPerBatch = profilerConfig.getProfileJvmStatBatchSendCount();
+
+        long collectionIntervalMs = monitorConfig.getProfileJvmStatCollectIntervalMs();
+        int numCollectionsPerBatch = monitorConfig.getProfileJvmStatBatchSendCount();
 
         if (collectionIntervalMs < MIN_COLLECTION_INTERVAL_MS) {
             collectionIntervalMs = DEFAULT_COLLECTION_INTERVAL_MS;
@@ -92,17 +91,17 @@ public class DefaultAgentStatMonitor implements AgentStatMonitor {
         }
         this.collectionIntervalMs = collectionIntervalMs;
 
-        List<Runnable> runnableList = new ArrayList<Runnable>();
+        List<Runnable> runnableList = new ArrayList<>();
 
         Runnable statCollectingJob = new CollectJob(dataSender, agentId, agentStartTimestamp, agentStatCollector, numCollectionsPerBatch);
         runnableList.add(statCollectingJob);
 
-        if (profilerConfig.isCustomMetricEnable() && customMetricRegistryService != null) {
+        if (monitorConfig.isCustomMetricEnable() && customMetricRegistryService != null) {
             Runnable customMetricCollectionJob = new CustomMetricCollectingJob(dataSender, new AgentCustomMetricCollector(customMetricRegistryService), numCollectionsPerBatch);
             runnableList.add(customMetricCollectionJob);
         }
 
-        if (profilerConfig.isUriStatEnable() && uriStatStorage != null) {
+        if (monitorConfig.isUriStatEnable() && uriStatStorage != null) {
             Runnable uriStatCollectingJob = new UriStatCollectingJob(dataSender, uriStatStorage);
             runnableList.add(uriStatCollectingJob);
         }
@@ -119,7 +118,7 @@ public class DefaultAgentStatMonitor implements AgentStatMonitor {
     // eg) executor.scheduleAtFixedRate(collectJob, 0(initialDelay is zero), this.collectionIntervalMs, TimeUnit.MILLISECONDS);
     private void preLoadClass(String agentId, long agentStartTimestamp, AgentStatMetricCollector<AgentStatMetricSnapshot> agentStatCollector) {
         logger.debug("pre-load class start");
-        CollectJob collectJob = new CollectJob(EmptyDataSender.INSTANCE, agentId, agentStartTimestamp, agentStatCollector, 1);
+        CollectJob collectJob = new CollectJob(EmptyDataSender.<MetricType>instance(), agentId, agentStartTimestamp, agentStatCollector, 1);
 
         // It is called twice to initialize some fields.
         collectJob.run();

@@ -17,15 +17,16 @@
 package com.navercorp.pinpoint.profiler.context.provider;
 
 import com.google.inject.Provider;
-import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.common.util.JvmType;
 import com.navercorp.pinpoint.common.util.JvmUtils;
 import com.navercorp.pinpoint.common.util.JvmVersion;
 import com.navercorp.pinpoint.profiler.ShutdownHookRegister;
+import com.navercorp.pinpoint.profiler.context.config.ContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -59,11 +60,10 @@ public class ShutdownHookRegisterProvider implements Provider<ShutdownHookRegist
 
     private final String vendorName;
 
-    public ShutdownHookRegisterProvider(ProfilerConfig profilerConfig) {
-        if (profilerConfig == null) {
-            throw new NullPointerException("profilerConfig");
-        }
-        vendorName = profilerConfig.getProfilerJvmVendorName();
+    public ShutdownHookRegisterProvider(ContextConfig contextConfig) {
+        Objects.requireNonNull(contextConfig, "contextConfig");
+        
+        vendorName = contextConfig.getProfilerJvmVendorName();
     }
 
     @Override

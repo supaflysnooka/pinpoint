@@ -21,7 +21,7 @@
     <parent>
         <groupId>com.navercorp.pinpoint</groupId>
         <artifactId>pinpoint</artifactId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>pinpoint-grpc</artifactId>
@@ -31,6 +31,7 @@
     <properties>
         <grpc.version>1.36.2</grpc.version>
         <protoc.version>3.12.4</protoc.version>
+        <tcnative.version>2.0.36.Final</tcnative.version>
     </properties>
 
 
@@ -130,6 +131,14 @@
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
             <version>${grpc.version}</version>
+        </dependency>
+
+        <!-- for tls connection -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>${tcnative.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
 

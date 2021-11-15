@@ -17,7 +17,6 @@ import { SystemConfigurationDataService } from './services/system-configuration-
 import { SystemConfigurationResolverService } from './services/system-configuration-resolver.service';
 import { SplitRatioService } from './services/split-ratio.service';
 import { GutterEventService } from './services/gutter-event.service';
-import { ApplicationListResolverService } from './services/application-list-resolver.service';
 import { AnalyticsService } from './services/analytics.service';
 import { BrowserSupportCheckService } from './services/browser-support-check.service';
 import { AgentHistogramDataService } from './services/agent-histogram-data.service';
@@ -26,6 +25,7 @@ import { StoreHelperService } from './services/store-helper.service';
 import { UrlValidateGuard } from './services/url-validate.guard';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
+import { WebhookDataService } from './services/webhook-data.service';
 
 import { HeaderLogoComponent } from './components/header-logo';
 import { EmptyContentsComponent, NoneComponent } from './components/empty-contents';
@@ -42,7 +42,6 @@ import { JSONTextParserPipe } from './pipes/json-text-parser.pipe';
 import { DynamicPopupService } from './services/dynamic-popup.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { WindowRefService } from './services/window-ref.service';
-import { ApplicationListDataService } from './services/application-list-data.service';
 import { SafeStylePipe } from './pipes/safe-style.pipe';
 import { RetryComponent } from './components/retry';
 import { HandleObsPipe } from './pipes/handle-obs.pipe';
@@ -124,10 +123,9 @@ export class SharedModule {
                 TransactionDetailDataService,
                 MessageQueueService,
                 DynamicPopupService,
-                ApplicationListResolverService,
-                ApplicationListDataService,
                 ThemeService,
-                AuthService
+                AuthService,
+                WebhookDataService,
             ]
         };
     }

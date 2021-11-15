@@ -42,7 +42,7 @@ import java.util.List;
 public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String, JoinStatBo, Long>> {
     private final static List<Tuple3<String, JoinStatBo, Long>> EMPTY_LIST = Collections.emptyList();
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final static Logger logger = LoggerFactory.getLogger(TBaseFlatMapper.class);
 
     private transient JoinAgentStatBoMapper joinAgentStatBoMapper;
     private transient ApplicationCache applicationCache;
@@ -92,7 +92,7 @@ public class TBaseFlatMapper extends RichFlatMapFunction<RawData, Tuple3<String,
         }
     }
 
-    private List<Tuple3<String, JoinStatBo, Long>> serverRequestFlatMap(TBase tBase) {
+    private List<Tuple3<String, JoinStatBo, Long>> serverRequestFlatMap(TBase<?, ?> tBase) {
         List<Tuple3<String, JoinStatBo, Long>> outData = new ArrayList<>(5);
 
         if (tBase instanceof TFAgentStatBatch) {

@@ -3,6 +3,7 @@ import { IOptions } from './scatter-chart.class';
 import { DataIndex, ScatterChartDataBlock } from './scatter-chart-data-block.class';
 import { ScatterChartSizeCoordinateManager } from './scatter-chart-size-coordinate-manager.class';
 import { ScatterChartTransactionTypeManager } from './scatter-chart-transaction-type-manager.class';
+import { ScatterChartVirtualGridManager } from './scatter-chart-virtual-grid-manager.class';
 
 export class ScatterChartRendererManager {
     private canvasMap: {[key: string]: HTMLCanvasElement[]};
@@ -15,6 +16,8 @@ export class ScatterChartRendererManager {
     private spareCanvasMap = new Map<string, CanvasRenderingContext2D[]>();
     private t0 = -1;
 
+    private offscreenCanvasMapPerColor: {[key: string]: Map<number, HTMLCanvasElement>};
+
     constructor(
         private options: IOptions,
         private coordinateManager: ScatterChartSizeCoordinateManager,
@@ -23,6 +26,7 @@ export class ScatterChartRendererManager {
     ) {
         this.initVariable();
         this.initCanvasWrapper();
+        this.preRenderDataPoint();
     }
     private initVariable(): void {
         this.canvasMap = {};
@@ -54,12 +58,43 @@ export class ScatterChartRendererManager {
         elementCanvasWrapper.appendChild(this.elementScroller);
         this.elementContainer.appendChild(elementCanvasWrapper);
     }
+    private preRenderDataPoint(): void {
+        const maxRadius = ScatterChartVirtualGridManager.gridUnit / 2;
+
+        this.offscreenCanvasMapPerColor = Object.values(this.typeManager.chartColor).reduce((acc: {[key: string]: Map<number, HTMLCanvasElement>}, color: string) => {
+            const offscreenCanvasMap = new Map<number, HTMLCanvasElement>();
+
+            for (let r = maxRadius; r > 0; r--) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const size = r * 2;
+                const x = r;
+                const y = r;
+                const alpha = r === 5 || r === 1 ? 1 : r * 2 * 0.1;
+
+                canvas.width = size;
+                canvas.height = size;
+
+                ctx.beginPath();
+                ctx.fillStyle = color;
+                ctx.strokeStyle = color;
+                ctx.arc(x, y, r, 0, Math.PI * 2, true);
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+
+                offscreenCanvasMap.set(r, canvas);
+            }
+
+            return {...acc, [color]: offscreenCanvasMap};
+        }, {});
+    }
+
     makeDataCanvas(dataBlock: ScatterChartDataBlock, agentList: string[]): void {
         let zIndex = 110;
         const bubbleSize = this.coordinateManager.getBubbleSize();
         const prefix = this.options.prefix;
         const heightOfChartSpace = this.coordinateManager.getHeightOfChartSpace();
-        const canvasWidth = this.coordinateManager.getCanvasWidth();
+        const canvasWidth = this.coordinateManager.getWidthOfChartSpace();
 
         agentList.forEach((agentName: string, index: number) => {
             this.typeManager.getTypeNameList().forEach((typeName: string) => {
@@ -165,9 +200,13 @@ export class ScatterChartRendererManager {
         };
     }
 
+    private drawPointWithSample(context: CanvasRenderingContext2D, {x, y, r}: any, {color, alpha}: any): void {
+        context.drawImage(this.offscreenCanvasMapPerColor[color].get(r), x - r, y - r);
+    }
+
     private drawPoint(context: CanvasRenderingContext2D, {x, y}: any, {color, alpha}: any): void {
         const bubbleRadius = this.options.bubbleRadius;
-        const r = this.coordinateManager.parseZDataToZChart(bubbleRadius);
+        const r = this.coordinateManager.parseZDataToZChart(bubbleRadius); // it sets to 2
 
         context.beginPath();
         context.fillStyle = color;
@@ -180,7 +219,7 @@ export class ScatterChartRendererManager {
     private generateCanvas(order: number): CanvasRenderingContext2D {
         const canvas = document.createElement('canvas');
 
-        canvas.width = this.coordinateManager.getCanvasWidth();
+        canvas.width = this.coordinateManager.getWidthOfChartSpace();
         canvas.height = this.coordinateManager.getHeightOfChartSpace() + this.coordinateManager.getBubbleSize();
         canvas.setAttribute('data-order', `${order}`);
 
@@ -192,7 +231,7 @@ export class ScatterChartRendererManager {
         let renderedX;
 
         let ctxIndex = this.scrollOrder[0];
-        const canvasWidth = this.coordinateManager.getCanvasWidth();
+        const canvasWidth = this.coordinateManager.getWidthOfChartSpace();
         const zeroLeft = Math.round(parseInt(this.canvasMap[key][ctxIndex].style.left, 10));
         const currentMaxX = zeroLeft + canvasWidth;
         const alpha = 0.3 + (0.1 * data[DataIndex.GROUP_COUNT]);
@@ -231,6 +270,51 @@ export class ScatterChartRendererManager {
 
         this.drawPoint(this.ctxMap[key][ctxIndex], {x: renderedX, y}, {color, alpha});
     }
+
+    drawTransactionWithSample(key: string, color: string, {x, y, count}: {x: number, y: number, count: number}): void {
+        let renderedX;
+
+        let ctxIndex = this.scrollOrder[0];
+        const canvasWidth = this.coordinateManager.getWidthOfChartSpace();
+        const zeroLeft = Math.round(parseInt(this.canvasMap[key][ctxIndex].style.left, 10));
+        const currentMaxX = zeroLeft + canvasWidth;
+        const r = count * 2 >= ScatterChartVirtualGridManager.gridUnit ? ScatterChartVirtualGridManager.gridUnit / 2 : count;
+
+        if (x > currentMaxX) {
+            if ((x - currentMaxX) <= canvasWidth) {
+                // when it's drawable in the following canvas
+                ctxIndex = this.scrollOrder[1];
+                renderedX = x - currentMaxX;
+            } else {
+                // if not, draw it in a spare canvas and keep it there till the first canvas gets out of the area and moves to the tail.
+                const canvasCount = Math.floor(x / canvasWidth);
+                let context: CanvasRenderingContext2D;
+
+                renderedX = x - (canvasCount * canvasWidth);
+                if (!this.spareCanvasMap.has(key)) {
+                    context = this.generateCanvas(canvasCount + 1);
+                    this.spareCanvasMap.set(key, [context]);
+                } else {
+                    const c = this.spareCanvasMap.get(key).find((ctx: CanvasRenderingContext2D) => ctx.canvas.getAttribute('data-order') === `${canvasCount + 1}`);
+
+                    if (!!c) {
+                        context = c;
+                    } else {
+                        context = this.generateCanvas(canvasCount + 1);
+                        this.spareCanvasMap.set(key, [...this.spareCanvasMap.get(key), context]);
+                    }
+                }
+
+                this.drawPointWithSample(context, {x: renderedX, y}, {color});
+                return;
+            }
+        } else {
+            renderedX = x - zeroLeft;
+        }
+
+        this.drawPointWithSample(this.ctxMap[key][ctxIndex], {x: renderedX, y, r}, {color});
+    }
+
     moveChart(timestamp: number): void {
         if (this.t0 === -1) {
             this.t0 = timestamp;
@@ -238,8 +322,8 @@ export class ScatterChartRendererManager {
 
         const deltaT = timestamp - this.t0;
         const deltaX =  this.coordinateManager.getPixelPerTime() * deltaT;
-        const canvasWidth = this.coordinateManager.getCanvasWidth();
-        const height = this.coordinateManager.getHeight();
+        const canvasWidth = this.coordinateManager.getWidthOfChartSpace();
+        const height = this.coordinateManager.getHeightOfChartSpace() + this.coordinateManager.getBubbleSize();
         // const baseLeft = parseInt(this.elementScroller.style.left, 10);
         const baseLeft = 0;
         const nextLeft = baseLeft - deltaX;
@@ -292,8 +376,8 @@ export class ScatterChartRendererManager {
         }
     }
     clear() {
-        const width = this.coordinateManager.getCanvasWidth();
-        const height = this.coordinateManager.getHeight();
+        const width = this.coordinateManager.getWidthOfChartSpace();
+        const height = this.coordinateManager.getHeightOfChartSpace() + this.coordinateManager.getBubbleSize();
 
         Object.keys(this.ctxMap).forEach((key: string) => {
             this.ctxMap[key].forEach((ctx: CanvasRenderingContext2D) => {

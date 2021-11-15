@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, AfterViewInit, HostBinding } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, AfterViewInit, HostBinding, Renderer2 } from '@angular/core';
 import * as moment from 'moment-timezone';
 import { GridOptions, RowNode } from 'ag-grid-community';
 
@@ -60,7 +60,8 @@ export class CallTreeComponent implements OnInit, OnChanges, AfterViewInit {
     rowData: IGridData[];
 
     constructor(
-        private windowRefService: WindowRefService
+        private windowRefService: WindowRefService,
+        private renderer: Renderer2,
     ) {}
 
     ngAfterViewInit() {
@@ -181,10 +182,19 @@ export class CallTreeComponent implements OnInit, OnChanges, AfterViewInit {
                 width: 420,
                 cellRenderer: 'agGroupCellRenderer',
                 cellRendererParams: {
-                    innerRenderer: this.innerCellRenderer,
+                    innerRenderer: this.innerCellRenderer.bind(this),
                     suppressCount: true
                 },
-                tooltipField: 'method'
+                tooltipField: 'method',
+                cellStyle: (params: any) => {
+                    const { level } = params.node;
+                    const indent = 15;
+                    const isRootRow = params.node.rowIndex === 0;
+
+                    return {
+                        paddingLeft: isRootRow ? `4px` : `${(level + 1) * indent}px`
+                    };
+                }
             },
             {
                 headerName: 'Argument',
@@ -342,7 +352,14 @@ export class CallTreeComponent implements OnInit, OnChanges, AfterViewInit {
                     break;
             }
         }
-        return result + params.data.method;
+
+        const span = this.renderer.createElement('span');
+        const text = this.renderer.createText(params.data.method);
+
+        this.renderer.setProperty(span, 'innerHTML', result);
+        this.renderer.appendChild(span, text);
+
+        return span;
     }
 
     onCellClick({colDef, value, data}: any): void {

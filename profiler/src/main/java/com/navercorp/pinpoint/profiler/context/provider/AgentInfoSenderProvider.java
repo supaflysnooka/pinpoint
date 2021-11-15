@@ -18,12 +18,13 @@ package com.navercorp.pinpoint.profiler.context.provider;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.profiler.AgentInfoSender;
 import com.navercorp.pinpoint.profiler.context.ServerMetaDataRegistryService;
+import com.navercorp.pinpoint.profiler.context.config.ContextConfig;
 import com.navercorp.pinpoint.profiler.context.module.AgentDataSender;
 import com.navercorp.pinpoint.profiler.context.module.ResultConverter;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
+import com.navercorp.pinpoint.profiler.metadata.MetaDataType;
 import com.navercorp.pinpoint.profiler.sender.EnhancedDataSender;
 import com.navercorp.pinpoint.profiler.sender.ResultResponse;
 import com.navercorp.pinpoint.profiler.util.AgentInfoFactory;
@@ -36,20 +37,20 @@ import java.util.Objects;
  */
 public class AgentInfoSenderProvider implements Provider<AgentInfoSender> {
 
-    private final ProfilerConfig profilerConfig;
-    private final Provider<EnhancedDataSender<Object>> enhancedDataSenderProvider;
+    private final ContextConfig contextConfig;
+    private final Provider<EnhancedDataSender<MetaDataType>> enhancedDataSenderProvider;
     private final Provider<AgentInfoFactory> agentInfoFactoryProvider;
     private final ServerMetaDataRegistryService serverMetaDataRegistryService;
-    private final MessageConverter<ResultResponse> messageConverter;
+    private final MessageConverter<Object, ResultResponse> messageConverter;
 
     @Inject
     public AgentInfoSenderProvider(
-            ProfilerConfig profilerConfig,
-            @AgentDataSender Provider<EnhancedDataSender<Object>> enhancedDataSenderProvider,
+            ContextConfig contextConfig,
+            @AgentDataSender Provider<EnhancedDataSender<MetaDataType>> enhancedDataSenderProvider,
             Provider<AgentInfoFactory> agentInfoFactoryProvider,
             ServerMetaDataRegistryService serverMetaDataRegistryService,
-            @ResultConverter MessageConverter<ResultResponse> messageConverter) {
-        this.profilerConfig = Objects.requireNonNull(profilerConfig, "profilerConfig");
+            @ResultConverter MessageConverter<Object, ResultResponse> messageConverter) {
+        this.contextConfig = Objects.requireNonNull(contextConfig, "contextConfig");
         this.enhancedDataSenderProvider = Objects.requireNonNull(enhancedDataSenderProvider, "enhancedDataSenderProvider");
         this.agentInfoFactoryProvider = Objects.requireNonNull(agentInfoFactoryProvider, "agentInfoFactoryProvider");
         this.serverMetaDataRegistryService = Objects.requireNonNull(serverMetaDataRegistryService, "serverMetaDataRegistryService");
@@ -58,10 +59,10 @@ public class AgentInfoSenderProvider implements Provider<AgentInfoSender> {
 
     @Override
     public AgentInfoSender get() {
-        final EnhancedDataSender enhancedDataSender = this.enhancedDataSenderProvider.get();
+        final EnhancedDataSender<MetaDataType> enhancedDataSender = this.enhancedDataSenderProvider.get();
         final AgentInfoFactory agentInfoFactory = this.agentInfoFactoryProvider.get();
         final AgentInfoSender agentInfoSender = new AgentInfoSender.Builder(enhancedDataSender, agentInfoFactory)
-                .sendInterval(profilerConfig.getAgentInfoSendRetryInterval())
+                .sendInterval(contextConfig.getAgentInfoSendRetryInterval())
                 .setMessageConverter(this.messageConverter)
                 .build();
         serverMetaDataRegistryService.addListener(new ServerMetaDataRegistryService.OnChangeListener() {

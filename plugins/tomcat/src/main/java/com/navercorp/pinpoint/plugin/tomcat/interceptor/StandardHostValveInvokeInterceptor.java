@@ -30,11 +30,14 @@ import com.navercorp.pinpoint.bootstrap.plugin.request.ServerHeaderRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListener;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListenerBuilder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.util.ParameterRecorder;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListener;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListenerBuilder;
 import com.navercorp.pinpoint.bootstrap.plugin.uri.UriStatRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.uri.UriStatRecorderFactory;
 import com.navercorp.pinpoint.plugin.common.servlet.ServletRequestUriExtractorService;
 import com.navercorp.pinpoint.plugin.common.servlet.util.ArgumentValidator;
 import com.navercorp.pinpoint.plugin.common.servlet.util.HttpServletRequestAdaptor;
+import com.navercorp.pinpoint.plugin.common.servlet.util.HttpServletResponseAdaptor;
 import com.navercorp.pinpoint.plugin.common.servlet.util.ParameterRecorderFactory;
 import com.navercorp.pinpoint.plugin.common.servlet.util.ServletArgumentValidator;
 import com.navercorp.pinpoint.plugin.tomcat.TomcatConfig;
@@ -58,6 +61,7 @@ public class StandardHostValveInvokeInterceptor implements AroundInterceptor {
     private final ArgumentValidator argumentValidator;
 
     private final ServletRequestListener<HttpServletRequest> servletRequestListener;
+    private final ServletResponseListener<HttpServletResponse> servletResponseListener;
 
 
     public StandardHostValveInvokeInterceptor(TraceContext traceContext, MethodDescriptor descriptor, RequestRecorderFactory<HttpServletRequest> requestRecorderFactory, UriStatRecorderFactory uriStatRecorderFactory) {
@@ -69,21 +73,24 @@ public class StandardHostValveInvokeInterceptor implements AroundInterceptor {
         RequestAdaptor<HttpServletRequest> requestAdaptor = new HttpServletRequestAdaptor();
         ParameterRecorder<HttpServletRequest> parameterRecorder = ParameterRecorderFactory.newParameterRecorderFactory(config.getExcludeProfileMethodFilter(), config.isTraceRequestParam());
 
-        ServletRequestListenerBuilder<HttpServletRequest> builder = new ServletRequestListenerBuilder<HttpServletRequest>(TomcatConstants.TOMCAT, traceContext, requestAdaptor);
-        builder.setExcludeURLFilter(config.getExcludeUrlFilter());
-        builder.setParameterRecorder(parameterRecorder);
-        builder.setRequestRecorderFactory(requestRecorderFactory);
+        ServletRequestListenerBuilder<HttpServletRequest> reqBuilder = new ServletRequestListenerBuilder<>(TomcatConstants.TOMCAT, traceContext, requestAdaptor);
+        reqBuilder.setExcludeURLFilter(config.getExcludeUrlFilter());
+        reqBuilder.setParameterRecorder(parameterRecorder);
+        reqBuilder.setRequestRecorderFactory(requestRecorderFactory);
 
         final ProfilerConfig profilerConfig = traceContext.getProfilerConfig();
-        builder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
-        builder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
-        builder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
-        builder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
+        reqBuilder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
+        reqBuilder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
+        reqBuilder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
+        reqBuilder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
 
         UriStatRecorder<HttpServletRequest> httpServletRequestUriStatRecorder = uriStatRecorderFactory.create(new ServletRequestUriExtractorService());
-        builder.setReqUriStatRecorder(httpServletRequestUriStatRecorder);
+        reqBuilder.setReqUriStatRecorder(httpServletRequestUriStatRecorder);
+        reqBuilder.setRecordStatusCode(false);
 
-        this.servletRequestListener = builder.build();
+        this.servletRequestListener = reqBuilder.build();
+
+        this.servletResponseListener = new ServletResponseListenerBuilder<>(traceContext, new HttpServletResponseAdaptor()).build();
     }
 
     @Override
@@ -106,7 +113,9 @@ public class StandardHostValveInvokeInterceptor implements AroundInterceptor {
                 // skip
                 return;
             }
+            final HttpServletResponse response = (HttpServletResponse) args[1];
             this.servletRequestListener.initialized(request, TomcatConstants.TOMCAT_METHOD, this.methodDescriptor);
+            this.servletResponseListener.initialized(response, TomcatConstants.TOMCAT_METHOD, this.methodDescriptor); //must after request listener due to trace block begin
         } catch (Throwable t) {
             if (isInfo) {
                 logger.info("Failed to servlet request event handle.", t);
@@ -140,6 +149,7 @@ public class StandardHostValveInvokeInterceptor implements AroundInterceptor {
                     }
                 }
             }
+            this.servletResponseListener.destroyed(response, throwable, statusCode); //must before request listener due to trace block ending
             this.servletRequestListener.destroyed(request, throwable, statusCode);
         } catch (Throwable t) {
             if (isInfo) {

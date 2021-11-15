@@ -9,9 +9,9 @@ import {
     DynamicPopupService,
     StoreHelperService
 } from 'app/shared/services';
-import { UrlPath, UrlPathId } from 'app/shared/models';
+import { UrlPath, UrlQuery } from 'app/shared/models';
 import { MessagePopupContainerComponent } from 'app/core/components/message-popup/message-popup-container.component';
-import { Actions } from 'app/shared/store';
+import { Actions } from 'app/shared/store/reducers';
 import { parseURL } from 'app/core/utils/url-utils';
 
 @Component({
@@ -52,14 +52,15 @@ export class TransactionDetailMenuForDetailContainerComponent implements OnInit 
 
     onOpenDetailView(): void {
         this.analyticsService.trackEvent(TRACKED_EVENT_LIST.OPEN_TRANSACTION_VIEW_PAGE_THROUGH_TAB);
+        const {agentId, spanId, traceId, collectorAcceptTime} = JSON.parse(this.newUrlStateNotificationService.getQueryValue(UrlQuery.TRANSACTION_INFO));
+
         this.urlRouteManagerService.openPage({
             path: [
-                UrlPath.TRANSACTION_VIEW,
-                this.newUrlStateNotificationService.getPathValue(UrlPathId.AGENT_ID),
-                this.newUrlStateNotificationService.getPathValue(UrlPathId.TRACE_ID),
-                this.newUrlStateNotificationService.getPathValue(UrlPathId.FOCUS_TIMESTAMP),
-                this.newUrlStateNotificationService.getPathValue(UrlPathId.SPAN_ID)
-            ]
+                UrlPath.TRANSACTION_VIEW
+            ],
+            queryParams: {
+                [UrlQuery.TRANSACTION_INFO]: {agentId, spanId, traceId, collectorAcceptTime}
+            }
         });
     }
 
@@ -71,7 +72,8 @@ export class TransactionDetailMenuForDetailContainerComponent implements OnInit 
             this.dynamicPopupService.openPopup({
                 data: {
                     title: 'Notice',
-                    contents: this.transactionDetailInfo.disableButtonMessage
+                    contents: this.transactionDetailInfo.disableButtonMessage,
+                    type: 'html'
                 },
                 component: MessagePopupContainerComponent
             }, {

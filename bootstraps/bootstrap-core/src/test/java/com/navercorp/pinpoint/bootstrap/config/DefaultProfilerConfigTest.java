@@ -18,12 +18,11 @@ package com.navercorp.pinpoint.bootstrap.config;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -32,69 +31,15 @@ import java.util.Properties;
 public class DefaultProfilerConfigTest {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-
     @Test
-    public void defaultProfilableClassFilter() throws IOException {
-        ProfilerConfig profilerConfig = new DefaultProfilerConfig();
-        Filter<String> profilableClassFilter = profilerConfig.getProfilableClassFilter();
-        Assert.assertFalse(profilableClassFilter.filter("net/spider/king/wang/Jjang"));
+    public void readProperty() {
+        InputStream inputStream = DefaultProfilerConfig.class.getResourceAsStream("/com/navercorp/pinpoint/bootstrap/config/test.property");
+
+        ProfilerConfigLoader.load(inputStream);
     }
 
     @Test
-    public void readProperty() throws IOException {
-        String path = DefaultProfilerConfig.class.getResource("/com/navercorp/pinpoint/bootstrap/config/test.property").getPath();
-        logger.debug("path:{}", path);
-
-        ProfilerConfig profilerConfig = DefaultProfilerConfig.load(path);
-    }
-
-
-
-    @Test
-    public void ioBuffering_test() throws IOException {
-        String path = DefaultProfilerConfig.class.getResource("/com/navercorp/pinpoint/bootstrap/config/test.property").getPath();
-        logger.debug("path:{}", path);
-
-        ProfilerConfig profilerConfig = DefaultProfilerConfig.load(path);
-
-        Assert.assertEquals(profilerConfig.isIoBufferingEnable(), false);
-        Assert.assertEquals(profilerConfig.getIoBufferingBufferSize(), 30);
-    }
-
-    @Test
-    public void ioBuffering_default() throws IOException {
-        String path = DefaultProfilerConfig.class.getResource("/com/navercorp/pinpoint/bootstrap/config/default.property").getPath();
-        logger.debug("path:{}", path);
-
-        ProfilerConfig profilerConfig = DefaultProfilerConfig.load(path);
-
-        Assert.assertEquals(profilerConfig.isIoBufferingEnable(), true);
-        Assert.assertEquals(profilerConfig.getIoBufferingBufferSize(), 10);
-    }
-
-
-    @Test
-    public void getCallStackMaxDepth() {
-        Properties properties = new Properties();
-        properties.setProperty("profiler.callstack.max.depth", "64");
-
-        // Read
-        ProfilerConfig profilerConfig = new DefaultProfilerConfig(properties);
-        Assert.assertEquals(profilerConfig.getCallStackMaxDepth(), 64);
-
-        // Unlimited
-        properties.setProperty("profiler.callstack.max.depth", "-1");
-        profilerConfig = new DefaultProfilerConfig(properties);
-        Assert.assertEquals(profilerConfig.getCallStackMaxDepth(), -1);
-        // Minimum calibration
-        properties.setProperty("profiler.callstack.max.depth", "0");
-        profilerConfig = new DefaultProfilerConfig(properties);
-        Assert.assertEquals(profilerConfig.getCallStackMaxDepth(), 2);
-    }
-
-
-    @Test
-    public void readList() throws IOException {
+    public void readList() {
         Properties properties = new Properties();
         properties.setProperty("profiler.test.list1", "foo,bar");
         properties.setProperty("profiler.test.list2", "foo, bar");
@@ -102,7 +47,7 @@ public class DefaultProfilerConfigTest {
         properties.setProperty("profiler.test.list4", "foo,bar ");
         properties.setProperty("profiler.test.list5", "    foo,    bar   ");
 
-        ProfilerConfig profilerConfig = new DefaultProfilerConfig(properties);
+        ProfilerConfig profilerConfig = ProfilerConfigLoader.load(properties);
 
         MatcherAssert.assertThat(profilerConfig.readList("profiler.test.list1"), CoreMatchers.hasItems("foo", "bar"));
         MatcherAssert.assertThat(profilerConfig.readList("profiler.test.list2"), CoreMatchers.hasItems("foo", "bar"));

@@ -18,7 +18,6 @@ package com.navercorp.pinpoint.collector.monitor;
 
 import com.navercorp.pinpoint.collector.config.CollectorConfiguration;
 import com.navercorp.pinpoint.collector.util.LoggerUtils;
-import com.navercorp.pinpoint.common.util.StringUtils;
 
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.JvmAttributeGaugeSet;
@@ -31,8 +30,8 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -41,6 +40,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -54,20 +54,23 @@ public class CollectorMetric {
 
     private final Logger reporterLogger = LoggerFactory.getLogger(REPORTER_LOGGER_NAME);
 
+    private final CollectorConfiguration collectorConfiguration;
+
     private final MetricRegistry metricRegistry;
 
     private final HBaseAsyncOperationMetrics hBaseAsyncOperationMetrics;
     private final BulkOperationMetrics bulkOperationMetrics;
 
-    private List<Reporter> reporterList = new ArrayList<Reporter>(2);
+    private List<Reporter> reporterList = new ArrayList<>(2);
 
     private final boolean isEnable = isEnable0(REPORTER_LOGGER_NAME);
 
-    @Autowired
-    private CollectorConfiguration collectorConfiguration;
-
-    public CollectorMetric(MetricRegistry metricRegistry, Optional<HBaseAsyncOperationMetrics> hBaseAsyncOperationMetrics, Optional<BulkOperationMetrics> cachedStatisticsDaoMetrics) {
-        this.metricRegistry = metricRegistry;
+    public CollectorMetric(CollectorConfiguration collectorConfiguration,
+                           MetricRegistry metricRegistry,
+                           Optional<HBaseAsyncOperationMetrics> hBaseAsyncOperationMetrics,
+                           Optional<BulkOperationMetrics> cachedStatisticsDaoMetrics) {
+        this.collectorConfiguration = Objects.requireNonNull(collectorConfiguration, "collectorConfiguration");
+        this.metricRegistry = Objects.requireNonNull(metricRegistry, "metricRegistry");
         this.hBaseAsyncOperationMetrics = hBaseAsyncOperationMetrics.orElse(null);
         this.bulkOperationMetrics = cachedStatisticsDaoMetrics.orElse(null);
     }
@@ -122,9 +125,7 @@ public class CollectorMetric {
         if (collectorConfiguration.isMetricJmxEnable()) {
 
             final String metricJmxDomainName = collectorConfiguration.getMetricJmxDomainName();
-            if (StringUtils.isEmpty(metricJmxDomainName)) {
-                throw new IllegalArgumentException("metricJmxDomainName may not be empty");
-            }
+            Assert.hasLength(metricJmxDomainName, "metricJmxDomainName must not be empty");
 
             final JmxReporter jmxReporter = createJmxReporter(metricJmxDomainName);
             jmxReporter.start();

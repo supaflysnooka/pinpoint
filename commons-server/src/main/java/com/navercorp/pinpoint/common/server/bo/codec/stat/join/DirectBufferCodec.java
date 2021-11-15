@@ -30,7 +30,6 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinLongFieldBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -47,7 +46,6 @@ public class DirectBufferCodec implements ApplicationStatCodec {
 
     private final AgentStatDataPointCodec codec;
 
-    @Autowired
     public DirectBufferCodec(AgentStatDataPointCodec codec) {
         this.codec = Objects.requireNonNull(codec, "agentStatDataPointCodec");
     }
@@ -65,7 +63,7 @@ public class DirectBufferCodec implements ApplicationStatCodec {
 
         final int numValues = joinDirectBufferBoList.size();
         valueBuffer.putVInt(numValues);
-        List<Long> timestamps = new ArrayList<Long>(numValues);
+        List<Long> timestamps = new ArrayList<>(numValues);
         JoinLongFieldStrategyAnalyzer.Builder directCountAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
         JoinLongFieldStrategyAnalyzer.Builder directMemoryUsedAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
         JoinLongFieldStrategyAnalyzer.Builder mappedCountAnalyzerBuilder = new JoinLongFieldStrategyAnalyzer.Builder();
@@ -147,7 +145,7 @@ public class DirectBufferCodec implements ApplicationStatCodec {
         List<JoinLongFieldBo> mappedCountList = this.codec.decodeValues(valueBuffer, mappedCountEncodingStrategy, numValues);
         List<JoinLongFieldBo> mappedMemoryUsedList = this.codec.decodeValues(valueBuffer, mappedMemoryUsedEncodingStrategy, numValues);
 
-        List<JoinStatBo> joinDirectBufferBoList = new ArrayList<JoinStatBo>(numValues);
+        List<JoinStatBo> joinDirectBufferBoList = new ArrayList<>(numValues);
         for (int i = 0; i < numValues; i++) {
             JoinDirectBufferBo joinDirectBufferBo = new JoinDirectBufferBo();
             joinDirectBufferBo.setId(id);

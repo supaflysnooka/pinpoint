@@ -21,6 +21,7 @@ import com.navercorp.pinpoint.collector.cluster.ClusterPointStateChangedEventHan
 import com.navercorp.pinpoint.common.Version;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.CreateNodeMessage;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperClient;
+import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperConstants;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.exception.PinpointZookeeperException;
 import com.navercorp.pinpoint.common.util.BytesUtils;
 import com.navercorp.pinpoint.rpc.common.SocketStateCode;
@@ -30,6 +31,8 @@ import com.navercorp.pinpoint.rpc.server.PinpointServer;
 import com.navercorp.pinpoint.test.utils.TestAwaitTaskUtils;
 import com.navercorp.pinpoint.test.utils.TestAwaitUtils;
 
+import org.apache.curator.utils.ZKPaths;
+import org.apache.hadoop.mapreduce.ID;
 import org.junit.Assert;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
@@ -49,11 +52,9 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class ZookeeperJobWorkerTest {
 
-    private static final String PINPOINT_CLUSTER_PATH = "/pinpoint-cluster";
-    private static final String PINPOINT_COLLECTOR_CLUSTER_PATH = PINPOINT_CLUSTER_PATH + "/collector";
-
     private static final String IDENTIFIER = "ZookeeperJobWorkerTest";
-    private static final String PATH = "/pinpoint-cluster/collector/" + IDENTIFIER;
+    private static final String PATH =
+            ZKPaths.makePath(ZookeeperConstants.DEFAULT_CLUSTER_ZNODE_ROOT_PATH, ZookeeperConstants.COLLECTOR_LEAF_PATH, IDENTIFIER);
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -65,7 +66,7 @@ public class ZookeeperJobWorkerTest {
         InMemoryZookeeperClient zookeeperClient = new InMemoryZookeeperClient(true);
         zookeeperClient.connect();
 
-        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, IDENTIFIER, new ClusterPointRepository());
+        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, PATH, new ClusterPointRepository());
         manager.start();
 
         ClusterPointStateChangedEventHandler clusterPointStateChangedEventHandler = new ClusterPointStateChangedEventHandler(channelPropertiesFactory, manager);
@@ -89,7 +90,7 @@ public class ZookeeperJobWorkerTest {
         InMemoryZookeeperClient zookeeperClient = new InMemoryZookeeperClient(true);
         zookeeperClient.connect();
 
-        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, IDENTIFIER, new ClusterPointRepository());
+        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, PATH, new ClusterPointRepository());
         manager.start();
 
         ClusterPointStateChangedEventHandler clusterPointStateChangedEventHandler = new ClusterPointStateChangedEventHandler(channelPropertiesFactory, manager);
@@ -113,7 +114,7 @@ public class ZookeeperJobWorkerTest {
         InMemoryZookeeperClient zookeeperClient = new InMemoryZookeeperClient(true);
         zookeeperClient.connect();
 
-        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, IDENTIFIER, new ClusterPointRepository());
+        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, PATH, new ClusterPointRepository());
         manager.start();
 
         ClusterPointStateChangedEventHandler clusterPointStateChangedEventHandler = new ClusterPointStateChangedEventHandler(channelPropertiesFactory, manager);
@@ -128,12 +129,12 @@ public class ZookeeperJobWorkerTest {
             CreateNodeMessage createNodeMessage = new CreateNodeMessage(PATH, new byte[0]);
             try {
                 zookeeperClient.createOrSetNode(createNodeMessage);
-            } catch (Exception e) {
+            } catch (Exception ignore) {
             }
 
             try {
                 zookeeperClient.createOrSetNode(createNodeMessage);
-            } catch (Exception e) {
+            } catch (Exception ignore) {
             }
 
             waitZookeeperServerData(0, zookeeperClient);
@@ -152,7 +153,7 @@ public class ZookeeperJobWorkerTest {
         InMemoryZookeeperClient zookeeperClient = new InMemoryZookeeperClient(true);
         zookeeperClient.connect();
 
-        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, IDENTIFIER, new ClusterPointRepository());
+        ZookeeperProfilerClusterManager manager = new ZookeeperProfilerClusterManager(zookeeperClient, PATH, new ClusterPointRepository());
         manager.start();
 
         ClusterPointStateChangedEventHandler clusterPointStateChangedEventHandler = new ClusterPointStateChangedEventHandler(channelPropertiesFactory, manager);

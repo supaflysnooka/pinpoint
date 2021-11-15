@@ -279,14 +279,8 @@ interface ITransactionDetailData {
 interface ITransactionTimelineData {
     agentId: string;
     applicationId: string;
-    barRatio: number;
-    callStack: any[];
-    asyncCallStack: any[];
-    focusedRows: boolean[];
-    databaseCalls: any[];
-    callStackEnd: number;
-    callStackStart: number;
     transactionId: string;
+    traceViewerDataURL: string;
 }
 // @store
 interface IHoveredInfo {
@@ -352,9 +346,10 @@ interface IServerMapMergeState {
 }
 
 // @store
-interface ITransactionMessage {
+interface IMessage {
     title: string;
     contents: string;
+    type: string;
 }
 
 // @store

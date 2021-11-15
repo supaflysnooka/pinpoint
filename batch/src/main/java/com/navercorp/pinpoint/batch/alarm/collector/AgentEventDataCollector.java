@@ -16,9 +16,9 @@
 
 package com.navercorp.pinpoint.batch.alarm.collector;
 
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
 import com.navercorp.pinpoint.common.server.bo.event.AgentEventBo;
 import com.navercorp.pinpoint.common.server.util.AgentEventType;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory;
 import com.navercorp.pinpoint.web.dao.AgentEventDao;
 import com.navercorp.pinpoint.web.dao.ApplicationIndexDao;
 import com.navercorp.pinpoint.web.vo.Application;
@@ -46,7 +46,7 @@ public class AgentEventDataCollector extends DataCollector {
 
     private final Map<String, Boolean> agentDeadlockEventDetected = new HashMap<>();
 
-    public AgentEventDataCollector(DataCollectorFactory.DataCollectorCategory dataCollectorCategory, Application application, AgentEventDao agentEventDao, ApplicationIndexDao applicationIndexDao, long timeSlotEndTime, long slotInterval) {
+    public AgentEventDataCollector(DataCollectorCategory dataCollectorCategory, Application application, AgentEventDao agentEventDao, ApplicationIndexDao applicationIndexDao, long timeSlotEndTime, long slotInterval) {
         super(dataCollectorCategory);
         this.application = application;
 

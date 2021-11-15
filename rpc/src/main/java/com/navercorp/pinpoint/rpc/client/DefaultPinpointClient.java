@@ -43,7 +43,7 @@ public class DefaultPinpointClient implements PinpointClient {
 
     private volatile boolean closed;
 
-    private final List<PinpointClientReconnectEventListener> reconnectEventListeners = new CopyOnWriteArrayList<PinpointClientReconnectEventListener>();
+    private final List<PinpointClientReconnectEventListener> reconnectEventListeners = new CopyOnWriteArrayList<>();
 
      public DefaultPinpointClient(PinpointClientHandler pinpointClientHandler) {
         this.pinpointClientHandler = Objects.requireNonNull(pinpointClientHandler, "pinpointClientHandler");
@@ -102,7 +102,7 @@ public class DefaultPinpointClient implements PinpointClient {
     }
 
     @Override
-    public Future sendAsync(byte[] bytes) {
+    public Future<?> sendAsync(byte[] bytes) {
         ensureOpen();
         return pinpointClientHandler.sendAsync(bytes);
     }
@@ -160,7 +160,7 @@ public class DefaultPinpointClient implements PinpointClient {
     }
 
     private Future<ResponseMessage> returnFailureFuture() {
-        DefaultFuture<ResponseMessage> future = new DefaultFuture<ResponseMessage>();
+        DefaultFuture<ResponseMessage> future = new DefaultFuture<>();
         future.setFailure(new PinpointSocketException("pinpointClientHandler is null"));
         return future;
     }

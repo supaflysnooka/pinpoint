@@ -56,14 +56,12 @@ public class JarReader {
     }
 
     public List<FileBinary> read(JarEntryFilter jarEntryFilter) throws IOException{
-        if (jarEntryFilter == null) {
-            throw new NullPointerException("jarEntryFilter");
-        }
+        Objects.requireNonNull(jarEntryFilter, "jarEntryFilter");
 
         final BufferedContext bufferedContext = new BufferedContext();
 
         Enumeration<JarEntry> entries = jarFile.entries();
-        List<FileBinary> fileBinaryList = new ArrayList<FileBinary>();
+        List<FileBinary> fileBinaryList = new ArrayList<>();
         while (entries.hasMoreElements()) {
             final JarEntry jarEntry = entries.nextElement();
             if (jarEntryFilter.filter(jarEntry)) {

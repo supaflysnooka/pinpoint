@@ -81,7 +81,7 @@ public class PinpointServerAcceptor implements PinpointServerConfig {
     private ServerMessageListenerFactory messageListenerFactory = new LoggingServerMessageListenerFactory();
 
     private ServerStreamChannelMessageHandler serverStreamChannelMessageHandler = ServerStreamChannelMessageHandler.DISABLED_INSTANCE;
-    private final List<ServerStateChangeEventHandler> stateChangeEventHandler = new ArrayList<ServerStateChangeEventHandler>();
+    private final List<ServerStateChangeEventHandler> stateChangeEventHandler = new ArrayList<>();
 
     private final Timer healthCheckTimer;
     private final HealthCheckManager healthCheckManager;
@@ -172,9 +172,8 @@ public class PinpointServerAcceptor implements PinpointServerConfig {
 
     @VisibleForTesting
     void setPipelineFactory(ChannelPipelineFactory channelPipelineFactory) {
-        if (channelPipelineFactory == null) {
-            throw new NullPointerException("channelPipelineFactory");
-        }
+        Objects.requireNonNull(channelPipelineFactory, "channelPipelineFactory");
+
         bootstrap.setPipelineFactory(channelPipelineFactory);
     }
 
@@ -293,7 +292,7 @@ public class PinpointServerAcceptor implements PinpointServerConfig {
     }
     
     public List<PinpointSocket> getWritableSocketList() {
-        List<PinpointSocket> pinpointServerList = new ArrayList<PinpointSocket>();
+        List<PinpointSocket> pinpointServerList = new ArrayList<>();
 
         for (Channel channel : channelGroup) {
             DefaultPinpointServer pinpointServer = (DefaultPinpointServer) channel.getAttachment();

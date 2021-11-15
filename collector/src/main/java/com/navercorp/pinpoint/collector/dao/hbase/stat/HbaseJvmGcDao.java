@@ -30,7 +30,6 @@ import com.navercorp.pinpoint.common.server.bo.stat.JvmGcBo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
@@ -43,18 +42,23 @@ import java.util.Objects;
 @Repository
 public class HbaseJvmGcDao implements AgentStatDaoV2<JvmGcBo> {
 
-    @Qualifier("asyncPutHbaseTemplate")
-    @Autowired
-    private HbaseOperations2 hbaseTemplate;
+    private final HbaseOperations2 hbaseTemplate;
 
-    @Autowired
-    private TableNameProvider tableNameProvider;
+    private final TableNameProvider tableNameProvider;
 
-    @Autowired
-    private AgentStatHbaseOperationFactory agentStatHbaseOperationFactory;
+    private final AgentStatHbaseOperationFactory agentStatHbaseOperationFactory;
 
-    @Autowired
-    private JvmGcSerializer jvmGcSerializer;
+    private final JvmGcSerializer jvmGcSerializer;
+
+    public HbaseJvmGcDao(@Qualifier("asyncPutHbaseTemplate") HbaseOperations2 hbaseTemplate,
+                         TableNameProvider tableNameProvider,
+                         AgentStatHbaseOperationFactory agentStatHbaseOperationFactory,
+                         JvmGcSerializer jvmGcSerializer) {
+        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate");
+        this.tableNameProvider = Objects.requireNonNull(tableNameProvider, "tableNameProvider");
+        this.agentStatHbaseOperationFactory = Objects.requireNonNull(agentStatHbaseOperationFactory, "agentStatHbaseOperationFactory");
+        this.jvmGcSerializer = Objects.requireNonNull(jvmGcSerializer, "jvmGcSerializer");
+    }
 
     @Override
     public void insert(String agentId, List<JvmGcBo> jvmGcBos) {

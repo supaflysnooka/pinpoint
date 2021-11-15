@@ -52,7 +52,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,7 +69,7 @@ import java.util.stream.Collectors;
  * @author jaehong.kim
  * @author minwoo.jung
  */
-//@Service
+@Service
 public class SpanServiceImpl implements SpanService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -91,7 +91,7 @@ public class SpanServiceImpl implements SpanService {
     private final SqlParser sqlParser = new DefaultSqlParser();
     private final OutputParameterParser outputParameterParser = new OutputParameterParser();
 
-    public SpanServiceImpl(@Qualifier("hbaseTraceDaoFactory") TraceDao traceDao,
+    public SpanServiceImpl(TraceDao traceDao,
                            SqlMetaDataDao sqlMetaDataDao,
                            Optional<MetaDataFilter> metaDataFilter,
                            ApiMetaDataDao apiMetaDataDao,
@@ -109,15 +109,17 @@ public class SpanServiceImpl implements SpanService {
 
     @Override
     public SpanResult selectSpan(TransactionId transactionId, Predicate<SpanBo> filter) {
-        return selectSpan(transactionId, filter, null);
+        return selectSpan(transactionId, filter, ColumnGetCount.UNLIMITED_COLUMN_GET_COUNT);
     }
 
     @Override
     public SpanResult selectSpan(TransactionId transactionId, Predicate<SpanBo> filter, ColumnGetCount columnGetCount) {
         Objects.requireNonNull(transactionId, "transactionId");
         Objects.requireNonNull(filter, "filter");
+        Objects.requireNonNull(columnGetCount, "columnGetCount");
 
-        final List<SpanBo> spans = traceDao.selectSpan(transactionId, columnGetCount);
+        final FetchResult<List<SpanBo>> fetchResult = traceDao.selectSpan(transactionId, columnGetCount);
+        final List<SpanBo> spans = fetchResult.getData();
         logger.debug("selectSpan spans:{}", spans.size());
 
         populateAgentName(spans);
@@ -125,7 +127,9 @@ public class SpanServiceImpl implements SpanService {
             return new SpanResult(TraceState.State.ERROR, new CallTreeIterator(null));
         }
 
-        final SpanResult result = order(spans, filter);
+        final boolean isReachedLimit = columnGetCount.isReachedLimit(fetchResult.getFetchCount());
+
+        final SpanResult result = order(spans, filter, isReachedLimit);
         final CallTreeIterator callTreeIterator = result.getCallTree();
         final List<Align> values = callTreeIterator.values();
 
@@ -488,11 +492,16 @@ public class SpanServiceImpl implements SpanService {
         void replacement(Align align, List<AnnotationBo> annotationBoList);
     }
 
-    private SpanResult order(List<SpanBo> spans, Predicate<SpanBo> filter) {
+    private SpanResult order(List<SpanBo> spans, Predicate<SpanBo> filter, boolean isReachedLimit) {
         SpanAligner spanAligner = new SpanAligner(spans, filter, serviceTypeRegistryService);
         final CallTree callTree = spanAligner.align();
 
-        return new SpanResult(spanAligner.getMatchType(), callTree.iterator());
+        TraceState.State matchType = spanAligner.getMatchType();
+        if (matchType == TraceState.State.PROGRESS && isReachedLimit) {
+            matchType = TraceState.State.OVERFLOW;
+        }
+
+        return new SpanResult(matchType, callTree.iterator());
     }
 
     private Optional<String> getAgentName(String agentId, long agentStartTime) {

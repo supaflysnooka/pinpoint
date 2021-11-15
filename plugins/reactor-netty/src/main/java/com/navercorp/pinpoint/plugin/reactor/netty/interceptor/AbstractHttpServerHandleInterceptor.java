@@ -36,6 +36,8 @@ import com.navercorp.pinpoint.bootstrap.plugin.request.ServerHeaderRecorder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListener;
 import com.navercorp.pinpoint.bootstrap.plugin.request.ServletRequestListenerBuilder;
 import com.navercorp.pinpoint.bootstrap.plugin.request.util.ParameterRecorder;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListener;
+import com.navercorp.pinpoint.bootstrap.plugin.response.ServletResponseListenerBuilder;
 import com.navercorp.pinpoint.plugin.reactor.netty.ReactorNettyConstants;
 import com.navercorp.pinpoint.plugin.reactor.netty.ReactorNettyPluginConfig;
 
@@ -53,6 +55,7 @@ public abstract class AbstractHttpServerHandleInterceptor implements AroundInter
     private final MethodDescriptor methodDescriptor;
     private final boolean enableAsyncEndPoint;
     private final ServletRequestListener<HttpServerRequest> servletRequestListener;
+    private final ServletResponseListener<HttpServerResponse> servletResponseListener;
 
     public AbstractHttpServerHandleInterceptor(TraceContext traceContext, MethodDescriptor descriptor, RequestRecorderFactory<HttpServerRequest> requestRecorderFactory) {
         this.traceContext = traceContext;
@@ -62,17 +65,21 @@ public abstract class AbstractHttpServerHandleInterceptor implements AroundInter
         RequestAdaptor<HttpServerRequest> requestAdaptor = new HttpRequestAdaptor();
         ParameterRecorder<HttpServerRequest> parameterRecorder = ParameterRecorderFactory.newParameterRecorderFactory(config.getExcludeProfileMethodFilter(), config.isTraceRequestParam());
 
-        ServletRequestListenerBuilder<HttpServerRequest> builder = new ServletRequestListenerBuilder<HttpServerRequest>(ReactorNettyConstants.REACTOR_NETTY, traceContext, requestAdaptor);
-        builder.setExcludeURLFilter(config.getExcludeUrlFilter());
-        builder.setParameterRecorder(parameterRecorder);
-        builder.setRequestRecorderFactory(requestRecorderFactory);
+        ServletRequestListenerBuilder<HttpServerRequest> reqBuilder = new ServletRequestListenerBuilder<>(ReactorNettyConstants.REACTOR_NETTY, traceContext, requestAdaptor);
+        reqBuilder.setExcludeURLFilter(config.getExcludeUrlFilter());
+        reqBuilder.setParameterRecorder(parameterRecorder);
+        reqBuilder.setRequestRecorderFactory(requestRecorderFactory);
 
         final ProfilerConfig profilerConfig = traceContext.getProfilerConfig();
-        builder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
-        builder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
-        builder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
-        builder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
-        this.servletRequestListener = builder.build();
+        reqBuilder.setRealIpSupport(config.getRealIpHeader(), config.getRealIpEmptyValue());
+        reqBuilder.setHttpStatusCodeRecorder(profilerConfig.getHttpStatusCodeErrors());
+        reqBuilder.setServerHeaderRecorder(profilerConfig.readList(ServerHeaderRecorder.CONFIG_KEY_RECORD_REQ_HEADERS));
+        reqBuilder.setServerCookieRecorder(profilerConfig.readList(ServerCookieRecorder.CONFIG_KEY_RECORD_REQ_COOKIES));
+        reqBuilder.setRecordStatusCode(false);
+
+        this.servletRequestListener = reqBuilder.build();
+
+        this.servletResponseListener = new ServletResponseListenerBuilder<>(traceContext, new HttpResponseAdaptor()).build();
 
         this.enableAsyncEndPoint = config.isEnableAsyncEndPoint();
     }
@@ -108,7 +115,9 @@ public abstract class AbstractHttpServerHandleInterceptor implements AroundInter
             }
 
             final HttpServerRequest request = (HttpServerRequest) args[0];
+            final HttpServerResponse response = (HttpServerResponse) args[0];
             this.servletRequestListener.initialized(request, ReactorNettyConstants.REACTOR_NETTY_INTERNAL, this.methodDescriptor);
+            this.servletResponseListener.initialized(response, ReactorNettyConstants.REACTOR_NETTY_INTERNAL, this.methodDescriptor); //must after request listener due to trace block begin
 
             // Set end-point
             final Trace trace = this.traceContext.currentTraceObject();
@@ -150,6 +159,7 @@ public abstract class AbstractHttpServerHandleInterceptor implements AroundInter
             final HttpServerRequest request = (HttpServerRequest) args[0];
             final HttpServerResponse response = (HttpServerResponse) args[0];
             final int statusCode = getStatusCode(response);
+            this.servletResponseListener.destroyed(response, throwable, statusCode); //must before request listener due to trace block ending
             this.servletRequestListener.destroyed(request, throwable, statusCode);
         } catch (Throwable t) {
             if (isInfo) {

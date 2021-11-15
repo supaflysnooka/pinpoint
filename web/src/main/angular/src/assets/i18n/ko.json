@@ -20,7 +20,8 @@
     },
     "MAIN": {
         "FAVORITE_APP_LIST": "즐겨찾기 목록",
-        "APP_LIST": "애플리케이션 목록"
+        "APP_LIST": "애플리케이션 목록",
+        "VISIBILITY_HIDDEN": "페이지가 비활성화 되었습니다. <br>다시 이용하려면, 페이지를 새로고침해주세요."
     },
     "INSPECTOR": {
         "APPLICATION_INSPECTOR_USAGE_GUIDE_MESSAGE": "[TEXT]:{value=Application Inspector 기능이 활성화 되어 있지 않습니다.<br> Application Inspector 기능을 사용하려면,}|[LINK]:{href=https://github.com/naver/pinpoint/blob/master/doc/application-inspector.md\\target=_blank\\style=color:#428bca\\linkText=링크}|[TEXT]:{value=를 참고하세요.}",
@@ -93,6 +94,11 @@
         },
         "EXPERIMENTAL": {
             "DESC": "* 실험 중인 기능을 적용해볼 수 있습니다."
+        },
+        "WEBHOOK": {
+            "URL": "url",
+            "URL_VALIDATION": "Url을 올바르게 입력해주세요.",
+            "ALIAS": "빈 값일 경우, 입력한  Url로 설정됩니다."
         }
     },
     "TRANSACTION": {

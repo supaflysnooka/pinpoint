@@ -9,7 +9,7 @@ import { WebAppSettingDataService, AnalyticsService, TRACKED_EVENT_LIST, Dynamic
 import { HELP_VIEWER_LIST, HelpViewerPopupContainerComponent } from 'app/core/components/help-viewer-popup/help-viewer-popup-container.component';
 import { ServerMapData } from 'app/core/components/server-map/class/server-map-data.class';
 import { getMaxTickValue, getStackedData } from 'app/core/utils/chart-util';
-import { Actions } from 'app/shared/store';
+import { Actions } from 'app/shared/store/reducers';
 import { ServerErrorPopupContainerComponent } from 'app/core/components/server-error-popup/server-error-popup-container.component';
 
 export enum SourceType {
@@ -223,9 +223,8 @@ export class LoadChartContainerComponent implements OnInit, OnDestroy {
                 }),
                 map((target: any) => target.timeSeriesHistogram)
             ),
-            this.storeHelperService.getAgentSelectionForServerList(this.unsubscribe).pipe(
+            this.messageQueueService.receiveMessage(this.unsubscribe, MESSAGE_TO.AGENT_SELECT_FOR_SERVER_LIST).pipe(
                 filter(() => this.sourceType === SourceType.INFO_PER_SERVER),
-                filter((data: IAgentSelection) => !!data),
                 tap(({agent}: IAgentSelection) => this.selectedAgent = agent),
                 pluck('load'),
             ),

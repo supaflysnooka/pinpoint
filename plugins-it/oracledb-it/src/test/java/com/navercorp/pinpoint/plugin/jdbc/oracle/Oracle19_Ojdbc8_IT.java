@@ -18,6 +18,8 @@ package com.navercorp.pinpoint.plugin.jdbc.oracle;
 import com.navercorp.pinpoint.pluginit.jdbc.*;
 import com.navercorp.pinpoint.pluginit.utils.AgentPath;
 import com.navercorp.pinpoint.test.plugin.*;
+import com.navercorp.pinpoint.test.plugin.shared.BeforeSharedClass;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,16 +30,20 @@ import org.testcontainers.containers.wait.strategy.Wait;
 @RunWith(PinpointPluginTestSuite.class)
 @PinpointAgent(AgentPath.PATH)
 @Dependency({"com.oracle.database.jdbc:ojdbc8:[19.9,)", JDBCTestConstants.VERSION, OracleITConstants.ORACLE_TESTCONTAINER})
-@Repository("http://repo.navercorp.com/maven2")
 @ImportPlugin("com.navercorp.pinpoint:pinpoint-oracle-jdbc-driver-plugin")
 public class Oracle19_Ojdbc8_IT extends Oracle_IT_Base {
     private static final Logger logger = LoggerFactory.getLogger(Oracle19_Ojdbc8_IT.class);
 
-    @BeforeClass
-    public static void setup() throws Exception {
+    @BeforeSharedClass
+    public static void sharedSetup() throws Exception {
         logger.info("Setting up oracle db...");
         startOracleDB(OracleITConstants.ORACLE_18_X_IMAGE, Wait.forLogMessage(".*Completed.*", 1));
-        helper.create(JDBC_API);
+    }
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        DriverProperties driverProperties = createDriverProperties();
+        helper = new OracleItHelper(driverProperties);
     }
 
     @Test

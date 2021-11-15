@@ -16,42 +16,45 @@
 
 package com.navercorp.pinpoint.collector.cluster.zookeeper;
 
-import com.navercorp.pinpoint.collector.cluster.AbstractClusterService;
 import com.navercorp.pinpoint.collector.cluster.ClusterPointRouter;
-import com.navercorp.pinpoint.collector.cluster.DisabledProfilerClusterManager;
+import com.navercorp.pinpoint.collector.cluster.ClusterService;
 import com.navercorp.pinpoint.collector.cluster.ProfilerClusterManager;
 import com.navercorp.pinpoint.collector.cluster.connection.CollectorClusterAcceptor;
 import com.navercorp.pinpoint.collector.cluster.connection.CollectorClusterConnectionFactory;
 import com.navercorp.pinpoint.collector.cluster.connection.CollectorClusterConnectionManager;
 import com.navercorp.pinpoint.collector.cluster.connection.CollectorClusterConnectionRepository;
 import com.navercorp.pinpoint.collector.cluster.connection.CollectorClusterConnector;
-import com.navercorp.pinpoint.collector.config.CollectorConfiguration;
+import com.navercorp.pinpoint.collector.config.CollectorClusterConfig;
 import com.navercorp.pinpoint.collector.util.CollectorUtils;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.CuratorZookeeperClient;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperClient;
-import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperConstants;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperEventWatcher;
 import com.navercorp.pinpoint.common.server.util.concurrent.CommonState;
 import com.navercorp.pinpoint.common.server.util.concurrent.CommonStateContext;
+import com.navercorp.pinpoint.common.util.Assert;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.zookeeper.KeeperException;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 /**
  * @author koo.taejin
  */
-public class ZookeeperClusterService extends AbstractClusterService {
+public class ZookeeperClusterService implements ClusterService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private final CollectorClusterConfig config;
+    private final String webZNodePath;
+
+    private final ClusterPointRouter clusterPointRouter;
 
     // represented as pid@hostname (identifiers may overlap for services hosted on localhost if pids are identical)
     // shouldn't be too big of a problem, but will change to MAC or IP if it becomes problematic.
@@ -69,33 +72,38 @@ public class ZookeeperClusterService extends AbstractClusterService {
     // ProfilerClusterManager detects/manages profiler -> collector connections, and saves their information in Zookeeper.
     private ProfilerClusterManager profilerClusterManager;
 
-    public ZookeeperClusterService(CollectorConfiguration config, ClusterPointRouter clusterPointRouter) {
-        super(config, clusterPointRouter);
+    public ZookeeperClusterService(CollectorClusterConfig config, ClusterPointRouter clusterPointRouter) {
+        this.config = Objects.requireNonNull(config, "config");
+        Assert.isTrue(config.isClusterEnable(), "clusterEnable is false");
 
-        if (config.isClusterEnable()) {
-            CollectorClusterConnectionRepository clusterRepository = new CollectorClusterConnectionRepository();
-            CollectorClusterConnectionFactory clusterConnectionFactory = new CollectorClusterConnectionFactory(serverIdentifier, clusterPointRouter, clusterPointRouter);
-            CollectorClusterConnector clusterConnector = clusterConnectionFactory.createConnector();
+        this.webZNodePath = Objects.requireNonNull(config.getWebZNodePath(), "webZNodePath");
 
-            CollectorClusterAcceptor clusterAcceptor = null;
-            if (StringUtils.isNotEmpty(config.getClusterListenIp()) && config.getClusterListenPort() > 0) {
-                InetSocketAddress bindAddress = new InetSocketAddress(config.getClusterListenIp(), config.getClusterListenPort());
-                clusterAcceptor = clusterConnectionFactory.createAcceptor(bindAddress, clusterRepository);
-            }
+        this.clusterPointRouter = Objects.requireNonNull(clusterPointRouter, "clusterPointRouter");
 
-            this.clusterConnectionManager = new CollectorClusterConnectionManager(serverIdentifier, clusterRepository, clusterConnector, clusterAcceptor);
-        }
+        CollectorClusterConnectionRepository clusterRepository = new CollectorClusterConnectionRepository();
+        CollectorClusterConnectionFactory clusterConnectionFactory = new CollectorClusterConnectionFactory(serverIdentifier, clusterPointRouter, clusterPointRouter);
+        CollectorClusterConnector clusterConnector = clusterConnectionFactory.createConnector();
+
+        CollectorClusterAcceptor clusterAcceptor = newCollectorClusterAcceptor(config, clusterRepository, clusterConnectionFactory);
+
+        this.clusterConnectionManager = new CollectorClusterConnectionManager(serverIdentifier, clusterRepository, clusterConnector, clusterAcceptor);
 
     }
 
-    @PostConstruct
-    @Override
-    public void setUp() throws KeeperException, IOException, InterruptedException {
-        if (!config.isClusterEnable()) {
-            logger.info("pinpoint-collector cluster disable.");
-            this.profilerClusterManager = new DisabledProfilerClusterManager();
-            return;
+    private CollectorClusterAcceptor newCollectorClusterAcceptor(CollectorClusterConfig config,
+                                                                 CollectorClusterConnectionRepository clusterRepository,
+                                                                 CollectorClusterConnectionFactory clusterConnectionFactory) {
+        if (StringUtils.isNotEmpty(config.getClusterListenIp()) && config.getClusterListenPort() > 0) {
+            InetSocketAddress bindAddress = new InetSocketAddress(config.getClusterListenIp(), config.getClusterListenPort());
+            return clusterConnectionFactory.createAcceptor(bindAddress, clusterRepository);
         }
+        return null;
+    }
+
+
+    @Override
+    public void setUp() throws IOException {
+        logger.info("pinpoint-collector cluster setUp");
 
         switch (this.serviceState.getCurrentState()) {
             case NEW:
@@ -106,10 +114,12 @@ public class ZookeeperClusterService extends AbstractClusterService {
                     this.client = new CuratorZookeeperClient(config.getClusterAddress(), config.getClusterSessionTimeout(), watcher);
                     this.client.connect();
 
-                    this.profilerClusterManager = new ZookeeperProfilerClusterManager(client, serverIdentifier, clusterPointRouter.getTargetClusterPointRepository());
+                    final String connectedAgentZNodePath = ZKPaths.makePath(config.getCollectorZNodePath(), serverIdentifier);
+
+                    this.profilerClusterManager = new ZookeeperProfilerClusterManager(client, connectedAgentZNodePath, clusterPointRouter.getTargetClusterPointRepository());
                     this.profilerClusterManager.start();
 
-                    this.webClusterManager = new ZookeeperClusterManager(client, ZookeeperConstants.PINPOINT_WEB_CLUSTER_PATH, clusterConnectionManager);
+                    this.webClusterManager = new ZookeeperClusterManager(client, webZNodePath, clusterConnectionManager);
                     this.webClusterManager.start();
 
                     this.serviceState.changeStateStarted();
@@ -135,13 +145,10 @@ public class ZookeeperClusterService extends AbstractClusterService {
         }
     }
 
-    @PreDestroy
+
     @Override
     public void tearDown() {
-        if (!config.isClusterEnable()) {
-            logger.info("pinpoint-collector cluster disable.");
-            return;
-        }
+        logger.info("pinpoint-collector cluster tearDown");
 
         if (!(this.serviceState.changeStateDestroying())) {
             CommonState state = this.serviceState.getCurrentState();
@@ -177,6 +184,7 @@ public class ZookeeperClusterService extends AbstractClusterService {
         return config.isClusterEnable();
     }
 
+    @Override
     public ProfilerClusterManager getProfilerClusterManager() {
         return profilerClusterManager;
     }
@@ -194,7 +202,7 @@ public class ZookeeperClusterService extends AbstractClusterService {
                 if (eventType == EventType.NodeChildrenChanged) {
                     String path = event.getPath();
 
-                    if (ZookeeperConstants.PINPOINT_WEB_CLUSTER_PATH.equals(path)) {
+                    if (webZNodePath.equals(path)) {
                         webClusterManager.handleAndRegisterWatcher(path);
                     } else {
                         logger.warn("Unknown Path ChildrenChanged {}.", path);
@@ -207,7 +215,7 @@ public class ZookeeperClusterService extends AbstractClusterService {
         public boolean handleConnected() {
             if (serviceState.isStarted()) {
                 profilerClusterManager.refresh();
-                webClusterManager.handleAndRegisterWatcher(ZookeeperConstants.PINPOINT_WEB_CLUSTER_PATH);
+                webClusterManager.handleAndRegisterWatcher(webZNodePath);
                 return true;
             } else {
                 return false;

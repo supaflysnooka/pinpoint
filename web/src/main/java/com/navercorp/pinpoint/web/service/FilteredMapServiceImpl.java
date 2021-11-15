@@ -45,7 +45,6 @@ import com.navercorp.pinpoint.web.vo.Range;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
@@ -88,7 +87,8 @@ public class FilteredMapServiceImpl implements FilteredMapService {
     private long buildTimeoutMillis;
 
     public FilteredMapServiceImpl(AgentInfoService agentInfoService,
-                                  @Qualifier("hbaseTraceDaoFactory") TraceDao traceDao, ApplicationTraceIndexDao applicationTraceIndexDao,
+                                  TraceDao traceDao,
+                                  ApplicationTraceIndexDao applicationTraceIndexDao,
                                   ServiceTypeRegistryService registry, ApplicationFactory applicationFactory,
                                   Optional<ServerMapDataFilter> serverMapDataFilter, ApplicationMapBuilderFactory applicationMapBuilderFactory) {
         this.agentInfoService = Objects.requireNonNull(agentInfoService, "agentInfoService");
@@ -175,7 +175,7 @@ public class FilteredMapServiceImpl implements FilteredMapService {
         applicationMapBuilder.linkType(LinkType.DETAILED);
         final WasNodeHistogramDataSource wasNodeHistogramDataSource = new ResponseHistogramsNodeHistogramDataSource(filteredMap.getResponseHistograms());
         applicationMapBuilder.includeNodeHistogram(new DefaultNodeHistogramFactory(wasNodeHistogramDataSource));
-        if(option.isUseStatisticsServerInstanceList()) {
+        if(option.isUseStatisticsAgentState()) {
             applicationMapBuilder.includeServerInfo(new StatisticsServerInstanceListFactory());
         } else {
             ServerInstanceListDataSource serverInstanceListDataSource = new AgentInfoServerInstanceListDataSource(agentInfoService);

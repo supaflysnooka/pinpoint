@@ -16,15 +16,13 @@
 
 package com.navercorp.pinpoint.batch.alarm.checker;
 
+import com.navercorp.pinpoint.web.alarm.CheckerCategory;
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
+import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory;
+import com.navercorp.pinpoint.batch.alarm.collector.AgentStatDataCollector;
 import com.navercorp.pinpoint.common.server.bo.stat.CpuLoadBo;
 import com.navercorp.pinpoint.common.server.bo.stat.JvmGcBo;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.batch.alarm.CheckerCategory;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory.DataCollectorCategory;
-import com.navercorp.pinpoint.batch.alarm.checker.AgentChecker;
-import com.navercorp.pinpoint.batch.alarm.checker.HeapUsageRateChecker;
-import com.navercorp.pinpoint.batch.alarm.collector.AgentStatDataCollector;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.dao.ApplicationIndexDao;
 import com.navercorp.pinpoint.web.dao.stat.AgentStatDao;
@@ -104,7 +102,7 @@ public class HeapUsageRateCheckerTest {
             @Override
             public List<String> selectAgentIds(String applicationName) {
                 if (SERVICE_NAME.equals(applicationName)) {
-                    List<String> agentIds = new LinkedList<String>();
+                    List<String> agentIds = new LinkedList<>();
                     agentIds.add("local_tomcat");
                     return agentIds;
                 }

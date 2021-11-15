@@ -53,7 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import javax.net.ssl.SSLException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,7 +120,7 @@ public class ChannelFactoryTest {
 
         SpanGrpc.SpanStub spanStub = SpanGrpc.newStub(managedChannel);
 
-        final QueueingStreamObserver<Empty> responseObserver = new QueueingStreamObserver<Empty>();
+        final QueueingStreamObserver<Empty> responseObserver = new QueueingStreamObserver<>();
 
         logger.debug("sendSpan");
         StreamObserver<PSpanMessage> sendSpan = spanStub.sendSpan(responseObserver);
@@ -137,7 +137,7 @@ public class ChannelFactoryTest {
         logger.debug("client-onCompleted");
         sendSpan.onCompleted();
 
-        Assert.assertTrue(countRecordClientInterceptor.getExecutedInterceptCallCount() == 1);
+        Assert.assertEquals(1, countRecordClientInterceptor.getExecutedInterceptCallCount());
 
         logger.debug("state:{}", managedChannel.getState(true));
         spanService.awaitOnCompleted();
@@ -161,10 +161,10 @@ public class ChannelFactoryTest {
     }
 
 
-    private static Server serverStart(ExecutorService executorService) throws IOException {
+    private static Server serverStart(ExecutorService executorService) throws SSLException {
         logger.debug("server start");
 
-        serverFactory = new ServerFactory(ChannelFactoryTest.class.getSimpleName() + "-server", "127.0.0.1", PORT, executorService, new ServerOption.Builder().build());
+        serverFactory = new ServerFactory(ChannelFactoryTest.class.getSimpleName() + "-server", "127.0.0.1", PORT, executorService, ServerOption.newBuilder().build());
         spanService = new SpanService();
 
         serverFactory.addService(spanService);

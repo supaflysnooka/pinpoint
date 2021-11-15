@@ -25,13 +25,15 @@ import com.navercorp.pinpoint.bootstrap.util.NumberUtils;
 import com.navercorp.pinpoint.common.trace.ServiceType;
 import com.navercorp.pinpoint.common.util.ArrayUtils;
 import com.navercorp.pinpoint.common.util.StringUtils;
+import com.navercorp.pinpoint.plugin.kafka.KafkaClientUtils;
 import com.navercorp.pinpoint.plugin.kafka.KafkaConstants;
 import com.navercorp.pinpoint.plugin.kafka.descriptor.EntryPointMethodDescriptor;
 import com.navercorp.pinpoint.plugin.kafka.field.accessor.EndPointFieldAccessor;
 import com.navercorp.pinpoint.plugin.kafka.field.accessor.RemoteAddressFieldAccessor;
+import com.navercorp.pinpoint.plugin.kafka.recorder.DefaultHeaderRecorder;
+import com.navercorp.pinpoint.plugin.kafka.recorder.HeaderRecorder;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -44,7 +46,7 @@ public class ConsumerRecordEntryPointInterceptor extends SpanRecursiveAroundInte
 
     protected static final EntryPointMethodDescriptor ENTRY_POINT_METHOD_DESCRIPTOR = new EntryPointMethodDescriptor();
 
-    private final AtomicReference<TraceFactoryProvider.TraceFactory> tracyFactoryReference = new AtomicReference<TraceFactoryProvider.TraceFactory>();
+    private final AtomicReference<TraceFactoryProvider.TraceFactory> tracyFactoryReference = new AtomicReference<>();
 
     protected final int parameterIndex;
 
@@ -109,17 +111,11 @@ public class ConsumerRecordEntryPointInterceptor extends SpanRecursiveAroundInte
     private static class TraceFactoryProvider {
 
         private static TraceFactory get(Object object) {
-            try {
-                final Class<?> aClass = object.getClass();
-                final Method method = aClass.getMethod("headers");
-
-                if (method != null) {
-                    return new SupportContinueTraceFactory();
-                }
-            } catch (NoSuchMethodException e) {
-                // ignore
+            if (KafkaClientUtils.supportHeaders(object.getClass())) {
+                return new SupportContinueTraceFactory();
+            } else {
+                return new DefaultTraceFactory();
             }
-            return new DefaultTraceFactory();
         }
 
         private interface TraceFactory {
@@ -220,6 +216,12 @@ public class ConsumerRecordEntryPointInterceptor extends SpanRecursiveAroundInte
 
         private static class SupportContinueTraceFactory extends DefaultTraceFactory {
 
+            private final HeaderRecorder headerRecorder;
+
+            public SupportContinueTraceFactory() {
+                this.headerRecorder = new DefaultHeaderRecorder();
+            }
+
             @Override
             public Trace createTrace(TraceContext traceContext, ConsumerRecord consumerRecord) {
                 org.apache.kafka.common.header.Headers headers = consumerRecord.headers();
@@ -238,11 +240,16 @@ public class ConsumerRecordEntryPointInterceptor extends SpanRecursiveAroundInte
                 }
 
                 TraceId traceId = populateTraceIdFromHeaders(traceContext, headers);
+                final Trace trace;
                 if (traceId != null) {
-                    return createContinueTrace(traceContext, consumerRecord, traceId);
+                    trace = createContinueTrace(traceContext, consumerRecord, traceId);
                 } else {
-                    return createTrace0(traceContext, consumerRecord);
+                    trace = createTrace0(traceContext, consumerRecord);
                 }
+                if (trace.canSampled()) {
+                    headerRecorder.record(trace.getSpanRecorder(), consumerRecord);
+                }
+                return trace;
             }
 
             private boolean isSampled(org.apache.kafka.common.header.Headers headers) {

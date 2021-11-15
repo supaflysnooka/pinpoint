@@ -25,9 +25,11 @@ import com.navercorp.pinpoint.grpc.client.DefaultChannelFactoryBuilder;
 import com.navercorp.pinpoint.grpc.client.HeaderFactory;
 import com.navercorp.pinpoint.grpc.client.UnaryCallDeadlineInterceptor;
 import com.navercorp.pinpoint.grpc.client.config.ClientOption;
+import com.navercorp.pinpoint.grpc.client.config.SslOption;
 import com.navercorp.pinpoint.grpc.client.interceptor.DiscardClientInterceptor;
 import com.navercorp.pinpoint.grpc.client.interceptor.DiscardEventListener;
 import com.navercorp.pinpoint.grpc.client.interceptor.LoggingDiscardEventListener;
+import com.navercorp.pinpoint.profiler.context.SpanType;
 import com.navercorp.pinpoint.profiler.context.grpc.config.GrpcTransportConfig;
 import com.navercorp.pinpoint.profiler.context.module.SpanDataSender;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
@@ -50,12 +52,12 @@ import java.util.Objects;
 /**
  * @author Woonduk Kang(emeroad)
  */
-public class SpanGrpcDataSenderProvider implements Provider<DataSender<Object>> {
+public class SpanGrpcDataSenderProvider implements Provider<DataSender<SpanType>> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final GrpcTransportConfig grpcTransportConfig;
-    private final MessageConverter<GeneratedMessageV3> messageConverter;
+    private final MessageConverter<SpanType, GeneratedMessageV3> messageConverter;
     private final HeaderFactory headerFactory;
     private final Provider<ReconnectExecutor> reconnectExecutor;
     private final NameResolverProvider nameResolverProvider;
@@ -67,7 +69,7 @@ public class SpanGrpcDataSenderProvider implements Provider<DataSender<Object>> 
 
     @Inject
     public SpanGrpcDataSenderProvider(GrpcTransportConfig grpcTransportConfig,
-                                      @SpanDataSender MessageConverter<GeneratedMessageV3> messageConverter,
+                                      @SpanDataSender MessageConverter<SpanType, GeneratedMessageV3> messageConverter,
                                       HeaderFactory headerFactory,
                                       Provider<ReconnectExecutor> reconnectExecutor,
                                       NameResolverProvider nameResolverProvider, ChannelzScheduledReporter reporter) {
@@ -87,11 +89,13 @@ public class SpanGrpcDataSenderProvider implements Provider<DataSender<Object>> 
     }
 
     @Override
-    public DataSender<Object> get() {
+    public DataSender<SpanType> get() {
         final String collectorIp = grpcTransportConfig.getSpanCollectorIp();
         final int collectorPort = grpcTransportConfig.getSpanCollectorPort();
+        final boolean sslEnable = grpcTransportConfig.isSpanSslEnable();
         final int senderExecutorQueueSize = grpcTransportConfig.getSpanSenderExecutorQueueSize();
-        final ChannelFactoryBuilder channelFactoryBuilder = newChannelFactoryBuilder();
+
+        final ChannelFactoryBuilder channelFactoryBuilder = newChannelFactoryBuilder(sslEnable);
         final ChannelFactory channelFactory = channelFactoryBuilder.build();
 
         final ReconnectExecutor reconnectExecutor = this.reconnectExecutor.get();
@@ -115,7 +119,7 @@ public class SpanGrpcDataSenderProvider implements Provider<DataSender<Object>> 
         reporter.registerRootChannel(spanGrpcDataSender.getLogId(), statReporter);
     }
 
-    private ChannelFactoryBuilder newChannelFactoryBuilder() {
+    private ChannelFactoryBuilder newChannelFactoryBuilder(boolean sslEnable) {
         final int channelExecutorQueueSize = grpcTransportConfig.getSpanChannelExecutorQueueSize();
         final ClientOption clientOption = grpcTransportConfig.getSpanClientOption();
 
@@ -136,6 +140,12 @@ public class SpanGrpcDataSenderProvider implements Provider<DataSender<Object>> 
 
         channelFactoryBuilder.setExecutorQueueSize(channelExecutorQueueSize);
         channelFactoryBuilder.setClientOption(clientOption);
+
+        if (sslEnable) {
+            SslOption sslOption = grpcTransportConfig.getSslOption();
+            channelFactoryBuilder.setSslOption(sslOption);
+        }
+
         return channelFactoryBuilder;
     }
 

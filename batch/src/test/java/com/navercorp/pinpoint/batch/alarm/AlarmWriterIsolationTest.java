@@ -16,13 +16,11 @@
 
 package com.navercorp.pinpoint.batch.alarm;
 
-import com.navercorp.pinpoint.batch.alarm.AlarmMessageSender;
-import com.navercorp.pinpoint.batch.alarm.AlarmWriter;
-import com.navercorp.pinpoint.batch.alarm.CheckerCategory;
 import com.navercorp.pinpoint.batch.alarm.checker.AlarmChecker;
 import com.navercorp.pinpoint.batch.alarm.checker.SlowCountChecker;
 import com.navercorp.pinpoint.batch.alarm.vo.CheckerResult;
 import com.navercorp.pinpoint.batch.service.AlarmService;
+import com.navercorp.pinpoint.web.alarm.CheckerCategory;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 
 import org.junit.Before;
@@ -66,7 +64,7 @@ public class AlarmWriterIsolationTest {
         
         AlarmChecker<Long> checker = getCheckerStub(rule, 1000L);
     
-        List<AlarmChecker> checkers = new LinkedList<AlarmChecker>();
+        List<AlarmChecker<?>> checkers = new LinkedList<>();
         checkers.add(checker);
     
         mockingAlarmService(getBeforeCheckerStub(0, 1));
@@ -87,7 +85,7 @@ public class AlarmWriterIsolationTest {
         
         AlarmChecker<Long> checker = getCheckerStub(rule, 1000L);
     
-        List<AlarmChecker> checkers = new LinkedList<AlarmChecker>();
+        List<AlarmChecker<?>> checkers = new LinkedList<>();
         checkers.add(checker);
     
         mockingAlarmService(getBeforeCheckerStub(1, 1));

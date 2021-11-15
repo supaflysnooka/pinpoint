@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author emeroad
@@ -54,7 +55,7 @@ public class ExcludePathFilter implements Filter<String> {
             return;
         }
         final List<String> excludePathFormats = StringUtils.tokenizeToStringList(excludePathFormatString, formatSeparator);
-        final List<PathMatcher> excludePathMatchers = new ArrayList<PathMatcher>(excludePathFormats.size());
+        final List<PathMatcher> excludePathMatchers = new ArrayList<>(excludePathFormats.size());
         for (String excludePathFormat : excludePathFormats) {
             final PathMatcher pathMatcher = createPathMatcher(excludePathFormat, pathSeparator);
             excludePathMatchers.add(pathMatcher);
@@ -63,9 +64,8 @@ public class ExcludePathFilter implements Filter<String> {
     }
 
     public PathMatcher[] toArray(Collection<PathMatcher> collection) {
-        if (collection == null) {
-            throw new NullPointerException("collection");
-        }
+        Objects.requireNonNull(collection, "collection");
+
         return collection.toArray(new PathMatcher[0]);
     }
 

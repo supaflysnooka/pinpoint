@@ -17,20 +17,21 @@
 package com.navercorp.pinpoint.batch.alarm;
 
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.batch.alarm.AlarmReader;
-import com.navercorp.pinpoint.batch.alarm.CheckerCategory;
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory;
 import com.navercorp.pinpoint.batch.alarm.collector.DataCollector;
 import com.navercorp.pinpoint.batch.alarm.collector.ResponseTimeDataCollector;
+import com.navercorp.pinpoint.web.alarm.CheckerCategory;
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
-import com.navercorp.pinpoint.web.batch.BatchConfiguration;
 import com.navercorp.pinpoint.web.dao.AlarmDao;
 import com.navercorp.pinpoint.web.dao.ApplicationIndexDao;
+import com.navercorp.pinpoint.web.dao.WebhookSendInfoDao;
 import com.navercorp.pinpoint.web.service.AlarmService;
 import com.navercorp.pinpoint.web.service.AlarmServiceImpl;
 import com.navercorp.pinpoint.web.vo.Application;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.ExecutionContext;
 
@@ -41,7 +42,10 @@ import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AlarmReaderTest {
 
@@ -74,7 +78,7 @@ public class AlarmReaderTest {
         ExecutionContext executionContext = new ExecutionContext();
         stepExecution.setExecutionContext(executionContext);
         
-        AlarmServiceImpl alarmService = new AlarmServiceImpl(mock(AlarmDao.class)) {
+        AlarmServiceImpl alarmService = new AlarmServiceImpl(mock(AlarmDao.class), mock(WebhookSendInfoDao.class)) {
             @Override
             public List<Rule> selectRuleByApplicationId(String applicationId) {
                 return new LinkedList<>();
@@ -92,7 +96,7 @@ public class AlarmReaderTest {
 
             @Override
             public List<Application> selectAllApplicationNames() {
-                List<Application> apps = new LinkedList<Application>();
+                List<Application> apps = new LinkedList<>();
 
                 for(int i = 0; i < 7; i++) {
                     apps.add(new Application(APP_NAME + i, ServiceType.STAND_ALONE));
@@ -102,7 +106,7 @@ public class AlarmReaderTest {
 
             @Override
             public List<Application> selectApplicationName(String applicationName) {
-                List<Application> apps = new LinkedList<Application>();
+                List<Application> apps = new LinkedList<>();
                 apps.add(new Application(APP_NAME, ServiceType.STAND_ALONE));
                 return apps;
             }
@@ -117,11 +121,11 @@ public class AlarmReaderTest {
             
         };
 
-        alarmService = new AlarmServiceImpl(mock(AlarmDao.class)) {
+        alarmService = new AlarmServiceImpl(mock(AlarmDao.class), mock(WebhookSendInfoDao.class)) {
             private final Map<String, Rule> ruleMap ;
 
             {
-                ruleMap = new HashMap<String, Rule>();
+                ruleMap = new HashMap<>();
 
                 for(int i = 0; i <=6; i++) {
                     ruleMap.put(APP_NAME + i, new Rule(APP_NAME + i, SERVICE_TYPE, CheckerCategory.SLOW_COUNT.getName(), 76, "testGroup", false, false, false, ""));
@@ -136,11 +140,12 @@ public class AlarmReaderTest {
             }
         };
         
-        dataCollectorFactory = new DataCollectorFactory() {
+        dataCollectorFactory = mock(DataCollectorFactory.class);
+        when(dataCollectorFactory.createDataCollector(any(), any(), anyLong())).thenAnswer(new Answer<DataCollector>() {
             @Override
-            public DataCollector createDataCollector(CheckerCategory checker, Application application, long timeSlotEndTime) {
+            public DataCollector answer(InvocationOnMock invocation) throws Throwable {
                 return new ResponseTimeDataCollector(DataCollectorCategory.RESPONSE_TIME, null, null, 0, 0);
             }
-        };
+        });
     }
 }

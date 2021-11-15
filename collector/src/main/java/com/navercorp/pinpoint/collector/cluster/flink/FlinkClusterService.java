@@ -22,12 +22,12 @@ import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperClient;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperEventWatcher;
 import com.navercorp.pinpoint.common.server.util.concurrent.CommonState;
 import com.navercorp.pinpoint.common.server.util.concurrent.CommonStateContext;
-import com.navercorp.pinpoint.common.util.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -48,15 +48,11 @@ public class FlinkClusterService {
     private ZookeeperClient client;
     private ZookeeperClusterManager zookeeperClusterManager;
 
-    public FlinkClusterService(FlinkConfiguration config, FlinkClusterConnectionManager clusterConnectionManager, String pinpointFlinkClusterPath) {
+    public FlinkClusterService(FlinkConfiguration config, FlinkClusterConnectionManager clusterConnectionManager) {
         this.config = Objects.requireNonNull(config, "config");
         this.serviceState = new CommonStateContext();
         this.clusterConnectionManager = Objects.requireNonNull(clusterConnectionManager, "clusterConnectionManager");
-
-        if (StringUtils.isEmpty(pinpointFlinkClusterPath)) {
-            throw new IllegalArgumentException("pinpointFlinkClusterPath must not be empty.");
-        }
-        this.pinpointFlinkClusterPath = pinpointFlinkClusterPath;
+        this.pinpointFlinkClusterPath = config.getFlinkZNodePath();
     }
 
     @PostConstruct

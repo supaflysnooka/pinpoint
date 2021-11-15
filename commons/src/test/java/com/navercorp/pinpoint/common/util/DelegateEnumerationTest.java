@@ -26,16 +26,16 @@ import java.util.*;
 public class DelegateEnumerationTest {
 
     @Test
-    public void testNormal() throws Exception {
-        Hashtable<String, String> hashTable = new Hashtable<String, String>();
+    public void testNormal() {
+        Hashtable<String, String> hashTable = new Hashtable<>();
         hashTable.put("a", "aa");
         hashTable.put("b", "bb");
         hashTable.put("c", "cc");
 
-        List<String> valueList = new ArrayList<String>(hashTable.values());
+        List<String> valueList = new ArrayList<>(hashTable.values());
 
         Enumeration<String> enumeration = hashTable.elements();
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertTrue(delegateEnumeration.hasMoreElements());
         Assert.assertTrue(valueList.remove(delegateEnumeration.nextElement()));
@@ -54,11 +54,11 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void bug69_Inefficient_exception_is_created() throws Exception {
-        Hashtable<String, String> hashTable = new Hashtable<String, String>();
+    public void bug69_Inefficient_exception_is_created() {
+        Hashtable<String, String> hashTable = new Hashtable<>();
 
         Enumeration<String> enumeration = hashTable.elements();
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertFalse(delegateEnumeration.hasMoreElements());
         Assert.assertNull(delegateEnumeration._getNextException());
@@ -67,13 +67,13 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void bug69_Inefficient_exception_is_created_nextElement() throws Exception {
+    public void bug69_Inefficient_exception_is_created_nextElement() {
 
         Enumeration<String> enumeration = mock(Enumeration.class);
         when(enumeration.hasMoreElements()).thenReturn(true);
         when(enumeration.nextElement()).thenReturn(null);
 
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertNull(delegateEnumeration.nextElement());
         verify(enumeration, times(1)).nextElement();
@@ -87,16 +87,16 @@ public class DelegateEnumerationTest {
 
 
     @Test
-    public void testSkip() throws Exception {
-        Hashtable<String, String> hashTable = new Hashtable<String, String>();
+    public void testSkip() {
+        Hashtable<String, String> hashTable = new Hashtable<>();
         hashTable.put("a", "aa");
         hashTable.put("b", "bb");
         hashTable.put("c", "cc");
 
-        List<String> valueList = new ArrayList<String>(hashTable.values());
+        List<String> valueList = new ArrayList<>(hashTable.values());
 
         Enumeration<String> enumeration = hashTable.elements();
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration, new DelegateEnumeration.Filter<String>() {
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration, new DelegateEnumeration.Filter<String>() {
             @Override
             public boolean filter(String s) {
                 if ("bb".equals(s)) {
@@ -122,11 +122,11 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void testExceptionTest_Exception() throws Exception {
-        Hashtable<String, String> hashTable = new Hashtable<String, String>();
+    public void testExceptionTest_Exception() {
+        Hashtable<String, String> hashTable = new Hashtable<>();
 
         Enumeration<String> enumeration = hashTable.elements();
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertFalse(delegateEnumeration.hasMoreElements());
         Assert.assertFalse(delegateEnumeration.hasMoreElements());
@@ -141,14 +141,14 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void testExceptionTest_Exception2() throws Exception {
+    public void testExceptionTest_Exception2() {
 
         Enumeration enumeration = mock(Enumeration.class);
 
         when(enumeration.hasMoreElements()).thenReturn(false);
         when(enumeration.nextElement()).thenThrow(new NoSuchElementException());
 
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertEquals(enumeration.hasMoreElements(), delegateEnumeration.hasMoreElements());
         Assert.assertEquals(enumeration.hasMoreElements(), delegateEnumeration.hasMoreElements());
@@ -162,14 +162,14 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void testExceptionTest_Null() throws Exception {
-        Enumeration enumeration = mock(Enumeration.class);
+    public void testExceptionTest_Null() {
+        Enumeration<String> enumeration = mock(Enumeration.class);
 
         when(enumeration.hasMoreElements()).thenReturn(false);
         when(enumeration.nextElement()).thenReturn(null);
 
 
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertFalse(delegateEnumeration.hasMoreElements());
         Assert.assertFalse(delegateEnumeration.hasMoreElements());
@@ -182,7 +182,7 @@ public class DelegateEnumerationTest {
     }
 
     @Test
-    public void testExceptionTest_Null2() throws Exception {
+    public void testExceptionTest_Null2() {
         Enumeration<String> enumeration = new Enumeration<String>() {
             private boolean first = true;
             @Override
@@ -201,7 +201,7 @@ public class DelegateEnumerationTest {
         };
 
 
-        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<String>(enumeration);
+        DelegateEnumeration<String> delegateEnumeration = new DelegateEnumeration<>(enumeration);
 
         Assert.assertTrue(delegateEnumeration.hasMoreElements());
         Assert.assertTrue(delegateEnumeration.hasMoreElements());

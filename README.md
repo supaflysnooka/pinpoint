@@ -5,14 +5,12 @@
 [![Maven](https://img.shields.io/github/workflow/status/pinpoint-apm/pinpoint/Maven/master?label=build&logo=github)](https://github.com/pinpoint-apm/pinpoint/actions?query=workflow%3AMaven)
 [![codecov](https://codecov.io/gh/pinpoint-apm/pinpoint/branch/master/graph/badge.svg)](https://codecov.io/gh/pinpoint-apm/pinpoint)
 
-**Visit [our official web site](https://pinpoint-apm.github.io/pinpoint/) for more information and [Latest updates on Pinpoint](https://pinpoint-apm.github.io/pinpoint/news.html)**.
+## Latest Release (2021/11/10)
 
-## Latest Release (2021/03/05)
+We're happy to announce the release of Pinpoint v2.3.1.
+Please check the release note at (https://github.com/pinpoint-apm/pinpoint/releases/tag/v2.3.1).
 
-We're happy to announce the release of Pinpoint v2.2.2.
-Please check the release note at (https://github.com/pinpoint-apm/pinpoint/releases/tag/v2.2.2).
-
-The current stable version is [v2.2.2](https://github.com/pinpoint-apm/pinpoint/releases/tag/v2.2.2).
+The current stable version is [v2.3.1](https://github.com/pinpoint-apm/pinpoint/releases/tag/v2.3.1).
 
 ## Live Demo
 
@@ -30,19 +28,19 @@ Pinpoint provides a solution to help analyze the overall structure of the system
 
 You should definitely check **Pinpoint** out If you want to
 
-* understand your *[application topology](https://pinpoint-apm.github.io/pinpoint/overview.html#overview)* at a glance
+* understand your *[application topology](https://pinpoint-apm.gitbook.io/pinpoint/want-a-quick-tour/overview)* at a glance
 * monitor your application in *Real-Time*
 * gain *code-level visibility* to every transaction
 * install APM Agents *without changing a single line of code*
 * have minimal impact on the performance (approximately 3% increase in resource usage)
 
 ## Getting Started
- * [Quick-start guide](https://pinpoint-apm.github.io/pinpoint/quickstart.html) for simple test run of Pinpoint
- * [Installation guide](https://pinpoint-apm.github.io/pinpoint/installation.html) for further instructions.
+ * [Quick-start guide](https://pinpoint-apm.gitbook.io/pinpoint/getting-started/quickstart) for simple test run of Pinpoint
+ * [Installation guide](https://pinpoint-apm.gitbook.io/pinpoint/getting-started/installation) for further instructions.
  
 ## Overview
 Services nowadays often consist of many different components, communicating amongst themselves as well as making API calls to external services. How each and every transaction gets executed is often left as a blackbox. Pinpoint traces transaction flows between these components and provides a clear view to identify problem areas and potential bottlenecks.<br/>
-For a more intimate guide, please check out our *[Introduction to Pinpoint](https://pinpoint-apm.github.io/pinpoint#want-a-quick-tour)* video clip.
+For a more intimate guide, please check out our *[Introduction to Pinpoint](https://pinpoint-apm.gitbook.io/pinpoint/#want-a-quick-tour)* video clip.
 
 * **ServerMap** - Understand the topology of any distributed systems by visualizing how their components are interconnected. Clicking on a node reveals details about the component, such as its current status, and transaction count.
 * **Realtime Active Thread Chart** - Monitor active threads inside applications in real-time.
@@ -59,7 +57,7 @@ For a more intimate guide, please check out our *[Introduction to Pinpoint](http
   ![Inspector](doc/images/ss_inspector.png)
 
 ## Supported Modules
-* JDK 6+
+* JDK 7+
 * [Tomcat 6/7/8/9](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/tomcat), [Jetty 8/9](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/jetty), [JBoss EAP 6/7](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/jboss), [Resin 4](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/resin), [Websphere 6/7/8](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/websphere), [Vertx 3.3/3.4/3.5](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/vertx), [Weblogic 10/11g/12c](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/weblogic), [Undertow](https://github.com/pinpoint-apm/pinpoint/tree/master/plugins/undertow)
 * Spring, Spring Boot (Embedded Tomcat, Jetty, Undertow), Spring asynchronous communication
 * Apache HTTP Client 3.x/4.x, JDK HttpConnector, GoogleHttpClient, OkHttpClient, NingAsyncHttpClient, Akka-http, Apache CXF
@@ -75,7 +73,7 @@ For a more intimate guide, please check out our *[Introduction to Pinpoint](http
 ## Compatibility
 
 Java version required to run Pinpoint:
-
+<!-- <compatibilityJava.md> -->
 Pinpoint Version | Agent | Collector | Web
 ---------------- | ----- | --------- | ---
 1.7.x  | 6-8  | 8   | 8
@@ -85,20 +83,20 @@ Pinpoint Version | Agent | Collector | Web
 2.1.x  | 6-14 | 8   | 8
 2.2.x  | 7-14 | 8   | 8
 2.3.x  | 7-17 | 8   | 8
-
+<!-- </compatibilityJava.md> -->
 HBase compatibility table:
-
+<!-- <compatibilityHbase.md> -->
 Pinpoint Version | HBase 1.0.x | HBase 1.2.x | HBase 1.4.x | HBase 2.0.x
 ---------------- | ----------- | ----------- | ----------- | -----------
 1.7.x | not tested | yes | yes | no
 1.8.x | not tested | yes | yes | no
-2.0.x | not tested | yes | yes | [optional](https://pinpoint-apm.github.io/pinpoint/hbaseupgrade.html#do-you-like-to-use-hbase-2x-for-pinpoint)
-2.1.x | not tested | yes | yes | [optional](https://pinpoint-apm.github.io/pinpoint/hbaseupgrade.html#do-you-like-to-use-hbase-2x-for-pinpoint)
-2.2.x | not tested | yes | yes | [optional](https://pinpoint-apm.github.io/pinpoint/hbaseupgrade.html#do-you-like-to-use-hbase-2x-for-pinpoint)
-2.3.x | not tested | yes | yes | [optional](https://pinpoint-apm.github.io/pinpoint/hbaseupgrade.html#do-you-like-to-use-hbase-2x-for-pinpoint)
-
+2.0.x | not tested | yes | yes | [optional](https://pinpoint-apm.gitbook.io/pinpoint/documents/hbase-upgrade#do-you-like-to-use-hbase-2x-for-pinpoint)
+2.1.x | not tested | yes | yes | [optional](https://pinpoint-apm.gitbook.io/pinpoint/documents/hbase-upgrade#do-you-like-to-use-hbase-2x-for-pinpoint)
+2.2.x | not tested | yes | yes | [optional](https://pinpoint-apm.gitbook.io/pinpoint/documents/hbase-upgrade#do-you-like-to-use-hbase-2x-for-pinpoint)
+2.3.x | not tested | yes | yes | [hbase2-module](https://github.com/pinpoint-apm/pinpoint/tree/master/hbase2-module)
+<!-- </compatibilityHbase.md> -->
 Agent - Collector compatibility table:
-
+<!-- <compatibilityPinpoint.md> -->
 Agent Version | Collector 1.7.x | Collector 1.8.x | Collector 2.0.x | Collector 2.1.x | Collector 2.2.x | Collector 2.3.x |
 ------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
 1.7.x | yes | yes | yes | yes | yes | yes 
@@ -107,7 +105,7 @@ Agent Version | Collector 1.7.x | Collector 1.8.x | Collector 2.0.x | Collector 
 2.1.x | no  | no  | no  | yes | yes | yes 
 2.2.x | no  | no  | no  | no  | yes | yes
 2.3.x | no  | no  | no  | no  | no  | yes
-
+<!-- </compatibilityPinpoint.md> -->
 Flink compatibility table:
 
 Pinpoint Version | flink 1.3.X | flink 1.4.X | flink 1.5.X | flink 1.6.X | flink 1.7.X

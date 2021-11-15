@@ -54,7 +54,7 @@ public class TestServerMessageListenerFactory implements ServerMessageListenerFa
     private final ResponseType responseType;
 
     private final boolean singleton;
-    private final AtomicReference<TestServerMessageListener> singletonReference = new AtomicReference<TestServerMessageListener>();
+    private final AtomicReference<TestServerMessageListener> singletonReference = new AtomicReference<>();
 
     public TestServerMessageListenerFactory() {
         this(HandshakeType.SIMPLEX, ResponseType.ECHO);
@@ -126,7 +126,7 @@ public class TestServerMessageListenerFactory implements ServerMessageListenerFa
         }
 
         @Override
-        public HandshakeResponseCode handleHandshake(Map properties) {
+        public HandshakeResponseCode handleHandshake(Map<?, ?> properties) {
             logger.info("handleHandshake properties:{}", properties);
 
             if (handshakeType == HandshakeType.DUPLEX) {

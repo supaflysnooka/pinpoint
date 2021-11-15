@@ -10,7 +10,7 @@ import {
     StoreHelperService,
     AnalyticsService, TRACKED_EVENT_LIST
 } from 'app/shared/services';
-import { Actions } from 'app/shared/store';
+import { Actions } from 'app/shared/store/reducers';
 import { UrlPath, UrlPathId, UrlQuery } from 'app/shared/models';
 import { IGridData } from './transaction-table-grid.component';
 import { TransactionMetaDataService } from './transaction-meta-data.service';
@@ -170,16 +170,15 @@ export class TransactionTableGridContainerComponent implements OnInit, OnDestroy
         });
     }
 
-    onOpenTransactionView(transactionShortInfo: { agentId: string, traceId: string, collectorAcceptTime: number, spanId: string }): void {
+    onOpenTransactionView({agentId, spanId, traceId, collectorAcceptTime}: {[key: string]: any}): void {
         this.analyticsService.trackEvent(TRACKED_EVENT_LIST.OPEN_TRANSACTION_VIEW_PAGE_WITH_ICON);
         this.urlRouteManagerService.openPage({
             path: [
-                UrlPath.TRANSACTION_VIEW,
-                transactionShortInfo.agentId,
-                transactionShortInfo.traceId,
-                transactionShortInfo.collectorAcceptTime + '',
-                transactionShortInfo.spanId,
-            ]
+                UrlPath.TRANSACTION_VIEW
+            ],
+            queryParams: {
+                [UrlQuery.TRANSACTION_INFO]: {agentId, spanId, traceId, collectorAcceptTime}
+            }
         });
     }
 }

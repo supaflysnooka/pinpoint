@@ -23,8 +23,8 @@ import static org.junit.Assert.*;
 public class ServerOptionTest {
 
     @Test
-    public void build() throws Exception {
-        ServerOption.Builder builder = new ServerOption.Builder();
+    public void build() {
+        ServerOption.Builder builder = ServerOption.newBuilder();
         builder.setKeepAliveTime(1);
         builder.setKeepAliveTimeout(1);
         builder.setPermitKeepAliveTime(1);

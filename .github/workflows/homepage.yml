@@ -1,21 +1,17 @@
-# This workflow will build a Java project with Maven
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
 name: Homepage
 
-on:
-  push:
-    branches: [ master ]
+on: 
+  release:
+    types: [published]
 
 jobs:
-
-  build:
+  repository-dispatch-event:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
-    - name: Make executeable
-      run: chmod +x ./.github/deployGitPage.sh
-    - name: Moving build to artifacts directory
-      run: ./.github/deployGitPage.sh
-      env:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Repository Dispatch    
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: pinpoint-apm/pinpoint-apm.github.io
+          event-type: release-pinpoint
+          client-payload: '{"username": "${{ github.actor }}", "release": ${{ toJSON(github.event.release) }}}'

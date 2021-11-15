@@ -151,6 +151,10 @@ public class ServerOption {
         return channelTypeEnum;
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ServerOption{");
@@ -197,6 +201,9 @@ public class ServerOption {
         private int receiveBufferSize = DEFAULT_RECEIVE_BUFFER_SIZE;
 
         private ChannelTypeEnum channelTypeEnum = ChannelTypeEnum.valueOf(DEFAULT_CHANNEL_TYPE);
+
+        private Builder() {
+        }
 
         public ServerOption build() {
             final ServerOption serverOption = new ServerOption(keepAliveTime, keepAliveTimeout, permitKeepAliveTime,

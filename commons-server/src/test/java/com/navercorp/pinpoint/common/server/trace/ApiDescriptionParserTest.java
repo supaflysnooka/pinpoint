@@ -32,7 +32,7 @@ public class ApiDescriptionParserTest {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private ApiDescriptionParser apiParser = new ApiDescriptionParser();
+    private final ApiDescriptionParser apiParser = new ApiDescriptionParser();
 
     @Test
     public void parse() {
@@ -150,4 +150,52 @@ public class ApiDescriptionParserTest {
         Assert.assertArrayEquals(new String[]{"path", "callback"}, result.getSimpleParameter());
     }
 
+    @Test
+    public void parse_tailingInfo1() {
+        String api = "express.app.get(path, callback) at /src/file:123";
+        ApiDescription result = apiParser.parse(api, LineNumber.NO_LINE_NUMBER);
+
+        Assert.assertEquals("express.app", result.getClassName());
+        Assert.assertEquals("app", result.getSimpleClassName());
+        Assert.assertEquals("express", result.getPackageName());
+
+        Assert.assertEquals("get", result.getMethodName());
+
+        Assert.assertEquals("get(path, callback) at /src/file:123", result.getMethodDescription());
+
+        Assert.assertArrayEquals(new String[]{"path", "callback"}, result.getSimpleParameter());
+    }
+
+
+    @Test
+    public void parse_tailingInfo2() {
+        String api = "express.app.get(path, callback) at /src/file:123";
+        ApiDescription result = apiParser.parse(api, LineNumber.NO_LINE_NUMBER);
+
+        Assert.assertEquals("express.app", result.getClassName());
+        Assert.assertEquals("app", result.getSimpleClassName());
+        Assert.assertEquals("express", result.getPackageName());
+
+        Assert.assertEquals("get", result.getMethodName());
+
+        Assert.assertEquals("get(path, callback) at /src/file:123", result.getMethodDescription());
+
+        Assert.assertArrayEquals(new String[]{"path", "callback"}, result.getSimpleParameter());
+    }
+
+    @Test
+    public void parse_tailingInfo4() {
+        String api = "express.app.get(path, callback) at (test.value)";
+        ApiDescription result = apiParser.parse(api, LineNumber.NO_LINE_NUMBER);
+
+        Assert.assertEquals("express.app", result.getClassName());
+        Assert.assertEquals("app", result.getSimpleClassName());
+        Assert.assertEquals("express", result.getPackageName());
+
+        Assert.assertEquals("get", result.getMethodName());
+
+        Assert.assertEquals("get(path, callback) at (test.value)", result.getMethodDescription());
+
+        Assert.assertArrayEquals(new String[]{"path", "callback"}, result.getSimpleParameter());
+    }
 }

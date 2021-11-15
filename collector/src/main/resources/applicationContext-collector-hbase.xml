@@ -13,8 +13,6 @@
 
     <context:component-scan base-package="com.navercorp.pinpoint.collector.dao.hbase"/>
 
-    <bean id="scatterConfiguration" class="com.navercorp.pinpoint.collector.config.ScatterConfiguration"/>
-
     <bean id="hbaseConfiguration" class="com.navercorp.pinpoint.common.hbase.HbaseConfigurationFactoryBean">
         <property name="properties">
             <props>
@@ -30,6 +28,8 @@
                 <prop key="hbase.rpc.timeout">${hbase.rpc.timeout}</prop>
                 <!-- hbase default:Integer.MAX_VALUE -->
                 <prop key="hbase.client.operation.timeout">${hbase.client.operation.timeout}</prop>
+                <!-- # hbase default: 20m -->
+                <prop key="hbase.client.meta.operation.timeout">${hbase.client.meta.operation.timeout}</prop>
 
                 <!-- hbase socket read timeout. default: 200000-->
                 <prop key="hbase.ipc.client.socket.timeout.read">${hbase.ipc.client.socket.timeout.read}</prop>
@@ -88,6 +88,13 @@
         <constructor-arg ref="hbaseTemplate"/>
     </bean>
 
+    <bean id="bufferedMutatorConfiguration" class="com.navercorp.pinpoint.common.hbase.batch.BufferedMutatorConfiguration"/>
+    <bean id="hbaseBatchWriter" class="com.navercorp.pinpoint.common.hbase.batch.BufferedMutatorWriter">
+        <constructor-arg ref="connectionFactory"/>
+    </bean>
+
+    <bean id="hbaseBatchPutWriter" class="com.navercorp.pinpoint.common.hbase.batch.DelegateSimpleBatchWriter"/>
+
     <bean id="hbaseAdminFactory" class="com.navercorp.pinpoint.common.hbase.HbaseAdminFactory">
         <constructor-arg ref="connectionFactory"/>
     </bean>
@@ -95,6 +102,8 @@
     <bean id="hbaseAdminTemplate" class="com.navercorp.pinpoint.common.hbase.HBaseAdminTemplate">
         <constructor-arg ref="hbaseAdminFactory"/>
     </bean>
+
+    <bean class="com.navercorp.pinpoint.common.hbase.HbaseVersionCheckBean"/>
 
     <bean id="distributorConfiguration" class="com.navercorp.pinpoint.common.server.hbase.DistributorConfiguration"/>
 

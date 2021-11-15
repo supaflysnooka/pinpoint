@@ -16,12 +16,11 @@
 
 package com.navercorp.pinpoint.batch.alarm.collector;
 
-import com.navercorp.pinpoint.batch.alarm.DataCollectorFactory;
+import com.navercorp.pinpoint.common.util.CollectionUtils;
+import com.navercorp.pinpoint.web.alarm.DataCollectorCategory;
 import com.navercorp.pinpoint.batch.alarm.vo.DataSourceAlarmVO;
-import com.navercorp.pinpoint.batch.util.ListUtils;
 import com.navercorp.pinpoint.common.server.bo.stat.DataSourceBo;
 import com.navercorp.pinpoint.common.server.bo.stat.DataSourceListBo;
-import com.navercorp.pinpoint.common.util.CollectionUtils;
 import com.navercorp.pinpoint.web.dao.ApplicationIndexDao;
 import com.navercorp.pinpoint.web.dao.stat.AgentStatDao;
 import com.navercorp.pinpoint.web.vo.Application;
@@ -51,7 +50,7 @@ public class DataSourceDataCollector extends DataCollector {
 
     private final AtomicBoolean init = new AtomicBoolean(false); // need to consider a race condition when checkers start simultaneously.
 
-    public DataSourceDataCollector(DataCollectorFactory.DataCollectorCategory dataCollectorCategory, Application application, AgentStatDao<DataSourceListBo> dataSourceDao, ApplicationIndexDao applicationIndexDao, long timeSlotEndTime, long slotInterval) {
+    public DataSourceDataCollector(DataCollectorCategory dataCollectorCategory, Application application, AgentStatDao<DataSourceListBo> dataSourceDao, ApplicationIndexDao applicationIndexDao, long timeSlotEndTime, long slotInterval) {
         super(dataCollectorCategory);
         this.application = application;
 
@@ -86,10 +85,9 @@ public class DataSourceDataCollector extends DataCollector {
                             .mapToInt(DataSourceBo::getMaxConnectionSize)
                             .average()
                             .orElse(-1);
-
-                    DataSourceBo dataSourceBo = ListUtils.getFirst(dataSourceBoList);
+                    DataSourceBo dataSourceBo = org.springframework.util.CollectionUtils.firstElement(dataSourceBoList);
                     DataSourceAlarmVO dataSourceAlarmVO = new DataSourceAlarmVO(dataSourceBo.getId(), dataSourceBo.getDatabaseName(),
-                            (int) Math.floor(activeConnectionAvg), new Double(Math.floor(maxConnectionAvg)).intValue());
+                            (int) Math.floor(activeConnectionAvg), (int) Math.floor(maxConnectionAvg));
 
                     agentDataSourceConnectionUsageRateMap.add(agentId, dataSourceAlarmVO);
                 }
@@ -122,10 +120,6 @@ public class DataSourceDataCollector extends DataCollector {
         return result;
     }
 
-    @Override
-    public DataCollectorFactory.DataCollectorCategory getDataCollectorCategory() {
-        return super.getDataCollectorCategory();
-    }
 
     public Map<String, List<DataSourceAlarmVO>> getDataSourceConnectionUsageRate() {
         return agentDataSourceConnectionUsageRateMap;

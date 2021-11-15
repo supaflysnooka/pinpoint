@@ -22,7 +22,6 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import com.navercorp.pinpoint.web.alarm.vo.CheckerResult;
 import com.navercorp.pinpoint.web.alarm.vo.Rule;
 import com.navercorp.pinpoint.web.dao.AlarmDao;
 import com.navercorp.pinpoint.web.vo.UserGroup;
@@ -34,7 +33,7 @@ import com.navercorp.pinpoint.web.vo.UserGroup;
 @Repository
 public class MysqlAlarmDao implements AlarmDao {
 
-    private static final String NAMESPACE = AlarmDao.class.getPackage().getName() + "." + AlarmDao.class.getSimpleName() + ".";
+    private static final String NAMESPACE = AlarmDao.class.getName() + ".";
     
     private final SqlSessionTemplate sqlSessionTemplate;
 
@@ -49,6 +48,7 @@ public class MysqlAlarmDao implements AlarmDao {
     }
     
     @Override
+    @Deprecated
     public String insertRuleExceptWebhookSend(Rule rule) {
         sqlSessionTemplate.insert(NAMESPACE + "insertRuleExceptWebhookSend", rule);
         return rule.getRuleId();
@@ -80,6 +80,7 @@ public class MysqlAlarmDao implements AlarmDao {
     }
     
     @Override
+    @Deprecated
     public void updateRuleExceptWebhookSend(Rule rule) {
         sqlSessionTemplate.update(NAMESPACE + "updateRuleExceptWebhookSend", rule);
     }
@@ -90,18 +91,9 @@ public class MysqlAlarmDao implements AlarmDao {
     }
 
     @Override
-    public List<CheckerResult> selectBeforeCheckerResultList(String applicationId) {
-        return sqlSessionTemplate.selectList(NAMESPACE + "selectBeforeCheckerResultList", applicationId);
-    }
-
-    @Override
     public void deleteCheckerResult(String ruleId) {
         sqlSessionTemplate.delete(NAMESPACE + "deleteCheckerResult", ruleId);
     }
 
-    @Override
-    public void insertCheckerResult(CheckerResult checkerResult) {
-        sqlSessionTemplate.insert(NAMESPACE + "insertCheckerResult", checkerResult);
-    }
 
 }

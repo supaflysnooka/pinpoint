@@ -31,12 +31,11 @@ public class LoggingBaseTraceFactory implements BaseTraceFactory {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private BaseTraceFactory baseTraceFactory;
+    private final BaseTraceFactory baseTraceFactory;
 
     public static BaseTraceFactory wrap(BaseTraceFactory baseTraceFactory) {
-        if (baseTraceFactory == null) {
-            throw new NullPointerException("baseTraceFactory");
-        }
+        Objects.requireNonNull(baseTraceFactory, "baseTraceFactory");
+
         return new LoggingBaseTraceFactory(baseTraceFactory);
     }
 
