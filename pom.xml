@@ -655,7 +655,7 @@
             <dependency>
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
-                <version>5.1.49</version>
+                <version>8.0.27</version>
             </dependency>
 
 
@@ -1072,7 +1072,7 @@
                     <version>1.6.0</version>
                     <configuration>
                         <options>sub, boss, newcap, loopfunc</options>
-                        <globals></globals>
+                        <globals/>
                         <directories>
                             <directory>src/main/webapp</directory>
                         </directories>
