@@ -961,7 +961,7 @@
             <dependency>
                 <groupId>org.apache.thrift</groupId>
                 <artifactId>libthrift</artifactId>
-                <version>${thrift.version}</version>
+                <version>0.14.0</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.httpcomponents</groupId>
@@ -1072,7 +1072,7 @@
                     <version>1.6.0</version>
                     <configuration>
                         <options>sub, boss, newcap, loopfunc</options>
-                        <globals></globals>
+                        <globals/>
                         <directories>
                             <directory>src/main/webapp</directory>
                         </directories>
