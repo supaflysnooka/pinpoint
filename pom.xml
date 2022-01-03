@@ -415,7 +415,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-core</artifactId>
-                <version>${spring.version}</version>
+                <version>5.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -425,12 +425,12 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
-                <version>${spring.version}</version>
+                <version>5.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-orm</artifactId>
-                <version>${spring.version}</version>
+                <version>5.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -446,12 +446,12 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
+                <version>5.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-webmvc</artifactId>
-                <version>${spring.version}</version>
+                <version>5.3.12</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -1072,7 +1072,7 @@
                     <version>1.6.0</version>
                     <configuration>
                         <options>sub, boss, newcap, loopfunc</options>
-                        <globals></globals>
+                        <globals/>
                         <directories>
                             <directory>src/main/webapp</directory>
                         </directories>
